@@ -1,0 +1,299 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+    overflow-x: hidden;
+}
+
+.complete-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+}
+
+.complete-content {
+    background: white;
+    border-radius: 24px;
+    padding: 48px;
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 10;
+    animation: slideUp 0.8s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.success-icon {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 32px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.complete-content h1 {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 16px;
+}
+
+.candidate-info {
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 40px;
+}
+
+.candidate-info span {
+    color: #007bff;
+    font-weight: 600;
+}
+
+.interview-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+    padding: 24px;
+    background: #f8f9fa;
+    border-radius: 16px;
+}
+
+.summary-item {
+    text-align: center;
+}
+
+.summary-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.summary-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.status-complete {
+    color: #28a745 !important;
+}
+
+.message-box {
+    background: #e3f2fd;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 32px;
+    text-align: left;
+}
+
+.message-box h3 {
+    color: #1976d2;
+    margin-bottom: 16px;
+    font-size: 18px;
+}
+
+.message-box ul {
+    list-style: none;
+    padding: 0;
+}
+
+.message-box li {
+    padding: 8px 0;
+    position: relative;
+    padding-left: 24px;
+    color: #555;
+    line-height: 1.5;
+}
+
+.message-box li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #28a745;
+    font-weight: bold;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 14px 28px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 140px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #5a6fd8, #6a4190);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #f8f9fa;
+    color: #495057;
+    border: 2px solid #dee2e6;
+}
+
+.btn-secondary:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-2px);
+}
+
+.contact-info {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.contact-info p:first-child {
+    margin-bottom: 8px;
+}
+
+/* 背景动画 */
+.background-animation {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.floating-shape {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    animation: float 6s ease-in-out infinite;
+}
+
+.shape-1 {
+    width: 80px;
+    height: 80px;
+    top: 20%;
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.shape-2 {
+    width: 120px;
+    height: 120px;
+    top: 60%;
+    right: 10%;
+    animation-delay: 2s;
+}
+
+.shape-3 {
+    width: 60px;
+    height: 60px;
+    bottom: 20%;
+    left: 20%;
+    animation-delay: 4s;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    33% { transform: translateY(-20px) rotate(120deg); }
+    66% { transform: translateY(20px) rotate(240deg); }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .complete-content {
+        padding: 32px 24px;
+        margin: 20px;
+    }
+    
+    .complete-content h1 {
+        font-size: 28px;
+    }
+    
+    .candidate-info {
+        font-size: 16px;
+    }
+    
+    .interview-summary {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        max-width: 280px;
+    }
+}
+
+@media (max-width: 480px) {
+    .complete-content {
+        padding: 24px 16px;
+    }
+    
+    .success-icon {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .success-icon svg {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .complete-content h1 {
+        font-size: 24px;
+    }
+}

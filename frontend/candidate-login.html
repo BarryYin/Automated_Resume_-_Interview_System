@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI预面试</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="goBack()">← 返回首页</button>
+        </div>
+        
+        <div class="main-content">
+            <h1>AI 预面试</h1>
+            <p class="subtitle">请输入您的信息开始面试</p>
+            
+            <div class="form-container">
+                <h2>候选人登录</h2>
+                <p class="form-subtitle">请填写您的基本信息以开始面试</p>
+                
+                <form id="candidateForm">
+                    <div class="form-group">
+                        <label for="name">姓名</label>
+                        <input type="text" id="name" name="name" placeholder="请输入您的姓名" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">邮箱</label>
+                        <input type="email" id="email" name="email" placeholder="your.email@example.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="invitationCode">面试邀请码（可选）</label>
+                        <input type="text" id="invitationCode" name="invitationCode" placeholder="如果有邀请码请输入">
+                    </div>
+                    
+                    <button type="submit" class="start-btn">开始面试</button>
+                </form>
+                
+                <p class="notice">面试过程中，AI 将根据岗位要求和您的简历进行提问</p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/main.js"></script>
+</body>
+</html>

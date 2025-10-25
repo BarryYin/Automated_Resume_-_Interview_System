@@ -1,0 +1,502 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f5f7fa;
+    color: #333;
+    line-height: 1.6;
+}
+
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+/* 头部样式 */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e1e5e9;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 8px 0;
+    transition: color 0.2s;
+}
+
+.back-btn:hover {
+    color: #333;
+}
+
+.dashboard-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.create-btn {
+    background: #1a1a1a;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.create-btn:hover {
+    background: #333;
+    transform: translateY(-1px);
+}
+
+/* 导航标签 */
+.dashboard-nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 30px;
+    background: white;
+    padding: 8px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    color: #666;
+    transition: all 0.2s;
+    flex: 1;
+    justify-content: center;
+}
+
+.nav-btn.active {
+    background: #007bff;
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.nav-btn:hover:not(.active) {
+    background: #f8f9fa;
+    color: #333;
+}
+
+.nav-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* 标签内容 */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.content-header {
+    margin-bottom: 24px;
+}
+
+.content-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+}
+
+.content-subtitle {
+    color: #666;
+    font-size: 14px;
+}
+
+/* 搜索和筛选 */
+.search-filter {
+    display: flex;
+    gap: 16px;
+    margin-top: 20px;
+    align-items: center;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    max-width: 400px;
+}
+
+.search-box svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 12px 12px 12px 44px;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.filter-select {
+    padding: 12px 16px;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    background: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* 岗位卡片 */
+.positions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.position-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f0f0f0;
+    transition: all 0.2s;
+}
+
+.position-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.position-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.position-info h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+}
+
+.position-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.position-status.recruiting {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.position-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-btn.view {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.action-btn.edit {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.action-btn.delete {
+    background: #ffebee;
+    color: #d32f2f;
+}
+
+.action-btn.email {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.action-btn.resume {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.action-btn:hover {
+    transform: scale(1.1);
+}
+
+.position-details {
+    border-top: 1px solid #f0f0f0;
+    padding-top: 16px;
+}
+
+.detail-item {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.detail-item .label {
+    background: #f8f9fa;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #666;
+    font-weight: 500;
+}
+
+.detail-item .value {
+    font-size: 14px;
+    color: #555;
+}
+
+/* 候选人卡片 */
+.candidates-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.candidate-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f0f0f0;
+    transition: all 0.2s;
+}
+
+.candidate-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.candidate-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.candidate-info h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+}
+
+.candidate-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge.completed {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.badge.in-progress {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.badge.pending {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.badge.score {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.candidate-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.candidate-actions .action-btn {
+    padding: 8px 12px;
+    width: auto;
+    height: auto;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.candidate-details {
+    border-top: 1px solid #f0f0f0;
+    padding-top: 12px;
+}
+
+.detail-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.detail-row .email {
+    color: #666;
+    font-size: 14px;
+}
+
+.detail-row .position {
+    color: #007bff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.detail-row .date {
+    color: #999;
+    font-size: 12px;
+}
+
+/* 数据分析占位符 */
+.analytics-placeholder {
+    background: white;
+    border-radius: 12px;
+    padding: 60px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.analytics-placeholder p {
+    color: #666;
+    font-size: 16px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 16px;
+    }
+    
+    .dashboard-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+    
+    .header-left {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .dashboard-nav {
+        flex-direction: column;
+    }
+    
+    .nav-btn {
+        justify-content: flex-start;
+    }
+    
+    .search-filter {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-box {
+        max-width: none;
+    }
+    
+    .position-header,
+    .candidate-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+    
+    .position-actions,
+    .candidate-actions {
+        align-self: stretch;
+        justify-content: flex-end;
+    }
+    
+    .detail-item,
+    .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-header h1 {
+        font-size: 24px;
+    }
+    
+    .position-card,
+    .candidate-card {
+        padding: 16px;
+    }
+    
+    .candidate-actions .action-btn {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+}

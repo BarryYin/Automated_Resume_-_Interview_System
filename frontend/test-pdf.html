@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF查看器测试</title>
+    <link rel="stylesheet" href="css/pdf-viewer.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 40px;
+            background: #f5f7fa;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test-btn {
+            padding: 12px 24px;
+            margin: 8px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .test-btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>PDF简历查看器测试</h1>
+        <p>点击下面的按钮测试PDF查看功能：</p>
+        
+        <div>
+            <h3>Python工程师候选人</h3>
+            <button class="test-btn" onclick="testPDF('Python工程师服务器端开发', '田忠.pdf')">
+                查看田忠的简历
+            </button>
+            <button class="test-btn" onclick="testPDF('Python工程师服务器端开发', '栾平.pdf')">
+                查看栾平的简历
+            </button>
+        </div>
+        
+        <div>
+            <h3>产品经理候选人</h3>
+            <button class="test-btn" onclick="testPDF('C端产品经理-AIGC领域', '包涵.pdf')">
+                查看包涵的简历
+            </button>
+            <button class="test-btn" onclick="testPDF('C端产品经理-AIGC领域', '乔志天.pdf')">
+                查看乔志天的简历
+            </button>
+        </div>
+        
+        <div>
+            <h3>新媒体运营候选人</h3>
+            <button class="test-btn" onclick="testPDF('金融海外投资新媒体内容文案编辑运营', '高飞虎.pdf')">
+                查看高飞虎的简历
+            </button>
+            <button class="test-btn" onclick="testPDF('金融海外投资新媒体内容文案编辑运营', '龙小天.pdf')">
+                查看龙小天的简历
+            </button>
+        </div>
+        
+        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e1e5e9;">
+            <h3>功能说明</h3>
+            <ul>
+                <li>✅ 支持PDF在线预览（使用PDF.js）</li>
+                <li>✅ 支持页面翻页（上一页/下一页）</li>
+                <li>✅ 支持缩放控制（放大/缩小）</li>
+                <li>✅ 支持PDF文件下载</li>
+                <li>✅ 响应式设计，支持移动端</li>
+                <li>✅ 错误处理和降级方案</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // 配置PDF.js
+        if (window.pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
+    <script src="js/pdf-viewer.js"></script>
+    
+    <script>
+        function testPDF(folder, filename) {
+            console.log('测试PDF查看:', folder, filename);
+            if (window.pdfViewer) {
+                pdfViewer.showPDFModal(folder, filename);
+            } else {
+                alert('PDF查看器未加载');
+            }
+        }
+    </script>
+</body>
+</html>

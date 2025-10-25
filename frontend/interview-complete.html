@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>面试完成</title>
+    <link rel="stylesheet" href="css/complete.css">
+</head>
+<body>
+    <div class="complete-container">
+        <div class="complete-content">
+            <div class="success-icon">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22,4 12,14.01 9,11.01"></polyline>
+                </svg>
+            </div>
+            
+            <h1>面试已完成！</h1>
+            <p class="candidate-info">感谢您 <span id="candidateNameComplete">候选人</span> 参与本次AI面试</p>
+            
+            <div class="interview-summary">
+                <div class="summary-item">
+                    <div class="summary-label">面试时长</div>
+                    <div class="summary-value" id="interviewDuration">--</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">回答问题数</div>
+                    <div class="summary-value" id="questionsAnswered">--</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">面试状态</div>
+                    <div class="summary-value status-complete">已完成</div>
+                </div>
+            </div>
+            
+            <div class="message-box">
+                <h3>接下来会发生什么？</h3>
+                <ul>
+                    <li>我们的AI系统正在分析您的回答</li>
+                    <li>HR团队将在2-3个工作日内审核结果</li>
+                    <li>我们会通过邮件通知您面试结果</li>
+                    <li>如有进一步面试，我们会及时联系您</li>
+                </ul>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn-secondary" onclick="downloadReport()">下载面试报告</button>
+                <button class="btn-primary" onclick="goHome()">返回首页</button>
+            </div>
+            
+            <div class="contact-info">
+                <p>如有任何问题，请联系我们：</p>
+                <p>📧 hr@company.com | 📞 400-123-4567</p>
+            </div>
+        </div>
+        
+        <div class="background-animation">
+            <div class="floating-shape shape-1"></div>
+            <div class="floating-shape shape-2"></div>
+            <div class="floating-shape shape-3"></div>
+        </div>
+    </div>
+    
+    <script src="js/complete.js"></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI面试进行中</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="interview-container">
+        <div class="interview-header">
+            <div class="session-info">
+                <span>面试候选人: <span id="candidateName">加载中...</span></span>
+            </div>
+            <div class="progress-info">
+                <span>第 <span id="currentQuestion">1</span>/10 题</span>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <button class="end-interview-btn" onclick="endInterview()">结束面试</button>
+            </div>
+        </div>
+        
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <!-- 消息将在这里动态添加 -->
+            </div>
+            
+            <div class="chat-input-container">
+                <textarea 
+                    id="chatInput" 
+                    placeholder="请输入您的回答..."
+                    rows="3"
+                ></textarea>
+                <button id="sendBtn" onclick="sendMessage()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="input-hint">
+                按 Enter 发送，Shift + Enter 换行
+            </div>
+            
+            <div class="ai-status">
+                <span id="aiStatus">显示代码编辑器链接</span>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/interview.js"></script>
+</body>
+</html>

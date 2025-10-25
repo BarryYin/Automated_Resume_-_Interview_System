@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI招聘面试系统</title>
+    <link rel="stylesheet" href="css/home.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AI 招聘面试系统</h1>
+            <p class="subtitle">智能预面试平台，帮助 HR 高效筛选候选人，为候选人提供便捷的面试体验</p>
+        </div>
+
+        <div class="cards-container">
+            <div class="card hr-card">
+                <div class="card-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z" />
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h2>HR 管理端</h2>
+                    <p class="card-description">创建岗位、管理候选人、查看面试结果和数据分析</p>
+                    <ul class="feature-list">
+                        <li>创建和管理招聘职位</li>
+                        <li>查看候选人面试记录</li>
+                        <li>AI 评分和数据分析</li>
+                        <li>邮件通知和报告</li>
+                    </ul>
+                    <button class="card-button hr-button" onclick="goToHR()">进入 HR 管理端</button>
+                </div>
+            </div>
+
+            <div class="card candidate-card">
+                <div class="card-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h2>候选人面试</h2>
+                    <p class="card-description">通过 AI 进行智能预面试，展示您的能力和经验</p>
+                    <ul class="feature-list">
+                        <li>智能问答交互</li>
+                        <li>实操代码测试</li>
+                        <li>文案写作评估</li>
+                        <li>即时反馈</li>
+                    </ul>
+                    <button class="card-button candidate-button" onclick="goToInterview()">开始面试</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>由 AI 驱动的智能招聘解决方案</p>
+        </div>
+    </div>
+
+    <script src="js/home.js"></script>
+</body>
+
+</html>
