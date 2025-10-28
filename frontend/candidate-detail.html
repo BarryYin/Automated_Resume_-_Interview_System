@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>候选人详情</title>
+    <link rel="stylesheet" href="css/candidate-detail.css">
+</head>
+<body>
+    <div class="detail-container">
+        <!-- 头部导航 -->
+        <div class="detail-header">
+            <button class="back-btn" onclick="goBack()">← 返回</button>
+            <h1 id="candidateName">候选人详情</h1>
+            <div class="header-actions">
+                <button class="btn-secondary" onclick="viewResume()">查看简历</button>
+                <button class="btn-primary" onclick="sendEmail()">发送邮件</button>
+            </div>
+        </div>
+
+        <!-- 基本信息卡片 -->
+        <div class="info-card">
+            <h2>基本信息</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>应聘职位</label>
+                    <span id="position">高级前端工程师</span>
+                </div>
+                <div class="info-item">
+                    <label>联系电话</label>
+                    <span id="phone">138-0000-0000</span>
+                </div>
+                <div class="info-item">
+                    <label>面试状态</label>
+                    <span id="status" class="status-badge">已完成</span>
+                </div>
+                <div class="info-item">
+                    <label>提交时间</label>
+                    <span id="submitTime">2025-01-23</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI评估结果卡片 -->
+        <div class="evaluation-card">
+            <div class="evaluation-header">
+                <h2>AI评估结果</h2>
+                <div class="total-score" id="totalScore">85 分</div>
+            </div>
+            
+            <div class="evaluation-summary" id="evaluationSummary">
+                候选人展现了扎实的专业知识和优秀的实操技能，综合素质优秀，性格积极主动，求职动机明确，价值观与企业文化高度契合。
+            </div>
+
+            <!-- 评分维度 -->
+            <div class="dimensions">
+                <div class="dimension-item">
+                    <div class="dimension-header">
+                        <span class="dimension-name">专业知识 (Knowledge)</span>
+                        <span class="dimension-score" id="knowledgeScore">85 分</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="knowledgeProgress" style="width: 85%"></div>
+                    </div>
+                    <div class="dimension-actions">
+                        <button class="edit-btn" onclick="editDimension('knowledge')">编辑评分</button>
+                    </div>
+                </div>
+
+                <div class="dimension-item">
+                    <div class="dimension-header">
+                        <span class="dimension-name">专业技能 (Skill)</span>
+                        <span class="dimension-score" id="skillScore">88 分</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="skillProgress" style="width: 88%"></div>
+                    </div>
+                    <div class="dimension-actions">
+                        <button class="edit-btn" onclick="editDimension('skill')">编辑评分</button>
+                    </div>
+                </div>
+
+                <div class="dimension-item">
+                    <div class="dimension-header">
+                        <span class="dimension-name">综合素质与能力 (Ability)</span>
+                        <span class="dimension-score" id="abilityScore">82 分</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="abilityProgress" style="width: 82%"></div>
+                    </div>
+                    <div class="dimension-actions">
+                        <button class="edit-btn" onclick="editDimension('ability')">编辑评分</button>
+                    </div>
+                </div>
+
+                <div class="dimension-item">
+                    <div class="dimension-header">
+                        <span class="dimension-name">个性特质 (Personality)</span>
+                        <span class="dimension-score" id="personalityScore">86 分</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="personalityProgress" style="width: 86%"></div>
+                    </div>
+                    <div class="dimension-actions">
+                        <button class="edit-btn" onclick="editDimension('personality')">编辑评分</button>
+                    </div>
+                </div>
+
+                <div class="dimension-item">
+                    <div class="dimension-header">
+                        <span class="dimension-name">求职动机 (Motivation)</span>
+                        <span class="dimension-score" id="motivationScore">84 分</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="motivationProgress" style="width: 84%"></div>
+                    </div>
+                    <div class="dimension-actions">
+                        <button class="edit-btn" onclick="editDimension('motivation')">编辑评分</button>
+                    </div>
+                </div>
+
+                <div class="dimension-item">
+                    <div class="dimension-header">
+                        <span class="dimension-name">价值观 (Value)</span>
+                        <span class="dimension-score" id="valueScore">87 分</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="valueProgress" style="width: 87%"></div>
+                    </div>
+                    <div class="dimension-actions">
+                        <button class="edit-btn" onclick="editDimension('value')">编辑评分</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 优势亮点和待改进项 -->
+        <div class="feedback-grid">
+            <div class="feedback-card strengths">
+                <h3>优势亮点</h3>
+                <ul id="strengthsList">
+                    <li>专业知识扎实，具备相关技术资格认证</li>
+                    <li>实操能力强，有丰富的项目实战经验</li>
+                    <li>综合素质优秀，问题解决能力突出</li>
+                </ul>
+                <button class="edit-feedback-btn" onclick="editFeedback('strengths')">编辑</button>
+            </div>
+
+            <div class="feedback-card improvements">
+                <h3>待改进项</h3>
+                <ul id="improvementsList">
+                    <li>可以进一步拓展跨领域知识</li>
+                    <li>在某些新技术领域经验相对较少</li>
+                </ul>
+                <button class="edit-feedback-btn" onclick="editFeedback('improvements')">编辑</button>
+            </div>
+        </div>
+
+        <!-- 面试对话记录 -->
+        <div class="interview-record">
+            <h2>面试对话记录</h2>
+            <div class="record-item">
+                <div class="question">
+                    <strong>面试官：</strong>能否介绍一下你最近的项目？
+                </div>
+                <div class="answer">
+                    <strong>候选人：</strong>我最近参与了一个电商平台的前端开发...
+                </div>
+            </div>
+            <!-- 更多对话记录 -->
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="action-buttons">
+            <button class="btn-outline" onclick="exportReport()">导出报告</button>
+            <button class="btn-outline" onclick="scheduleInterview()">安排复试</button>
+            <button class="btn-success" onclick="approveCandidate()">通过</button>
+            <button class="btn-danger" onclick="rejectCandidate()">拒绝</button>
+        </div>
+    </div>
+
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // 配置PDF.js
+        if (window.pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
+    <link rel="stylesheet" href="css/pdf-viewer.css">
+    <script src="js/pdf-viewer.js"></script>
+    <script src="js/candidate-detail.js"></script>
+</body>
+</html>

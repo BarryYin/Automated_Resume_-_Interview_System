@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试数据分析</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .candidate-item { margin: 10px 0; padding: 10px; background: #f5f5f5; }
+    </style>
+</head>
+<body>
+    <h1>数据分析测试</h1>
+    
+    <div class="section">
+        <h2>统计数据</h2>
+        <div id="stats">加载中...</div>
+    </div>
+    
+    <div class="section">
+        <h2>最佳候选人</h2>
+        <div id="best-candidates">加载中...</div>
+    </div>
+    
+    <div class="section">
+        <h2>最低薪资候选人</h2>
+        <div id="lowest-salary">加载中...</div>
+    </div>
+
+    <script>
+        async function loadTestData() {
+            try {
+                const response = await fetch('http://localhost:8000/api/dashboard/stats');
+                const data = await response.json();
+                
+                // 显示统计数据
+                document.getElementById('stats').innerHTML = `
+                    <p>活跃职位: ${data.active_positions}</p>
+                    <p>总候选人: ${data.total_candidates}</p>
+                    <p>已完成面试: ${data.completed_interviews}</p>
+                    <p>平均得分: ${data.average_score}</p>
+                `;
+                
+                // 显示最佳候选人
+                const bestHtml = data.best_candidates.map(item => `
+                    <div class="candidate-item">
+                        <strong>${item.candidate.name}</strong> - ${item.candidate.position}<br>
+                        评分: ${item.candidate.score || '未评分'} | 原因: ${item.reason}
+                    </div>
+                `).join('');
+                document.getElementById('best-candidates').innerHTML = bestHtml;
+                
+                // 显示最低薪资候选人
+                const salaryHtml = data.lowest_salary_candidates.map(item => `
+                    <div class="candidate-item">
+                        <strong>${item.candidate.name}</strong> - ${item.candidate.position}<br>
+                        薪资: ${item.candidate.expected_salary} | 评分: ${item.candidate.score || '未评分'}
+                    </div>
+                `).join('');
+                document.getElementById('lowest-salary').innerHTML = salaryHtml;
+                
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                document.getElementById('stats').innerHTML = '加载失败: ' + error.message;
+            }
+        }
+        
+        // 页面加载后执行
+        loadTestData();
+    </script>
+</body>
+</html>

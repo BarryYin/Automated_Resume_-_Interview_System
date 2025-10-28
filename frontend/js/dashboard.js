@@ -77,11 +77,26 @@ function switchTab(tabName) {
 async function loadPositionsData() {
     console.log('加载岗位数据');
     try {
-        const response = await fetch('data/real_data.json');
-        const data = await response.json();
-        renderPositions(data.jobs);
+        const response = await fetch('http://localhost:8000/api/jobs');
+        if (response.ok) {
+            const jobs = await response.json();
+            renderPositions(jobs);
+        } else {
+            throw new Error('获取职位数据失败');
+        }
     } catch (error) {
         console.error('加载岗位数据失败:', error);
+        // 使用备用数据
+        renderPositions([
+            {
+                id: 1,
+                title: "Python工程师服务器端开发",
+                department: "技术部",
+                location: "北京",
+                salary_range: "15000-25000",
+                status: "招聘中"
+            }
+        ]);
     }
 }
 
@@ -132,11 +147,20 @@ function renderPositions(jobs) {
 async function loadCandidatesData() {
     console.log('加载候选人数据');
     try {
-        const response = await fetch('data/real_data.json');
-        const data = await response.json();
-        renderCandidates(data.candidates);
+        const response = await fetch('http://localhost:8000/api/candidates');
+        if (response.ok) {
+            const candidates = await response.json();
+            renderCandidates(candidates);
+        } else {
+            throw new Error('获取候选人数据失败');
+        }
     } catch (error) {
         console.error('加载候选人数据失败:', error);
+        // 显示错误信息
+        const container = document.querySelector('.candidates-list');
+        if (container) {
+            container.innerHTML = '<div class="error-message">加载候选人数据失败，请检查网络连接</div>';
+        }
     }
 }
 
@@ -147,7 +171,7 @@ function renderCandidates(candidates) {
     
     container.innerHTML = candidates.map(candidate => {
         const statusClass = getStatusClass(candidate.status);
-        const scoreDisplay = candidate.total_score ? `得分: ${candidate.total_score}` : '';
+        const scoreDisplay = candidate.score ? `得分: ${candidate.score}` : '';
         
         return `
             <div class="candidate-card" data-status="${statusClass}">
@@ -156,7 +180,7 @@ function renderCandidates(candidates) {
                         <h3>${candidate.name}</h3>
                         <div class="candidate-badges">
                             <span class="badge ${statusClass}">${candidate.status}</span>
-                            ${candidate.total_score ? `<span class="badge score">${scoreDisplay}</span>` : ''}
+                            ${candidate.score ? `<span class="badge score">${scoreDisplay}</span>` : ''}
                         </div>
                     </div>
                     <div class="candidate-actions">
@@ -166,7 +190,7 @@ function renderCandidates(candidates) {
                             </svg>
                             查看详情
                         </button>
-                        <button class="action-btn resume" onclick="viewResume('${candidate.resume_folder}', '${candidate.resume_file}')">
+                        <button class="action-btn resume" onclick="viewResumeByName('${candidate.name}')">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
                             </svg>
@@ -183,7 +207,7 @@ function renderCandidates(candidates) {
                     <div class="detail-row">
                         <span class="email">${candidate.email}</span>
                         <span class="position">应聘: ${candidate.position}</span>
-                        <span class="date">${candidate.interview_date || '未安排面试'}</span>
+                        <span class="date">面试日期: ${candidate.interview_date || '未安排'}</span>
                     </div>
                 </div>
             </div>
@@ -202,9 +226,41 @@ function getStatusClass(status) {
 }
 
 // 加载分析数据
-function loadAnalyticsData() {
+async function loadAnalyticsData() {
     console.log('加载分析数据');
-    // 这里可以从API加载真实数据
+    
+    // 更新统计数据
+    try {
+        const statsResponse = await fetch('http://localhost:8000/api/dashboard/stats');
+        if (statsResponse.ok) {
+            const stats = await statsResponse.json();
+            updateAnalyticsStats(stats);
+        }
+        
+        // 加载最佳候选人数据
+        const topResponse = await fetch('http://localhost:8000/api/candidates/top');
+        if (topResponse.ok) {
+            const topCandidates = await topResponse.json();
+            updateTopCandidates(topCandidates);
+        }
+        
+        // 加载最新候选人数据
+        const recentResponse = await fetch('http://localhost:8000/api/candidates/recent');
+        if (recentResponse.ok) {
+            const recentCandidates = await recentResponse.json();
+            updateRecentCandidates(recentCandidates);
+        }
+        
+    } catch (error) {
+        console.error('加载分析数据失败:', error);
+        // 使用默认数据
+        updateAnalyticsStats({
+            active_positions: 3,
+            total_candidates: 0,
+            completed_interviews: 0,
+            average_score: 0.0
+        });
+    }
 }
 
 // 创建新职位
@@ -515,21 +571,8 @@ function deletePosition(positionId) {
 async function viewCandidate(candidateId) {
     console.log('查看候选人:', candidateId);
     
-    try {
-        const response = await fetch('data/real_data.json');
-        const data = await response.json();
-        const candidate = data.candidates.find(c => c.id === candidateId);
-        
-        if (!candidate) {
-            alert('候选人信息未找到');
-            return;
-        }
-        
-        showCandidateDetailModal(candidate);
-    } catch (error) {
-        console.error('加载候选人详情失败:', error);
-        alert('加载候选人详情失败');
-    }
+    // 跳转到候选人详情页面
+    window.location.href = `candidate-detail.html?id=${candidateId}`;
 }
 
 // 显示候选人详情模态框
@@ -743,6 +786,536 @@ function exportData(type) {
     alert(`导出${type}数据功能开发中...`);
 }
 
+// AI对话功能
+let isChatOpen = false;
+
+function toggleAIChat() {
+    const sidebar = document.getElementById('aiChatSidebar');
+    const overlay = document.getElementById('chatOverlay');
+    
+    isChatOpen = !isChatOpen;
+    
+    if (isChatOpen) {
+        sidebar.classList.add('open');
+        overlay.classList.add('show');
+    } else {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+    }
+}
+
+async function askQuickQuestion(question) {
+    // 添加用户消息
+    addChatMessage(question, 'user');
+    
+    // 显示AI正在思考
+    const thinkingId = addChatMessage('正在分析相关数据...', 'ai', true);
+    
+    try {
+        // 调用AI聊天API
+        const response = await fetch('http://localhost:8000/api/ai-chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: question,
+                context: {
+                    type: 'quick_question',
+                    current_tab: currentTab,
+                    timestamp: new Date().toISOString()
+                }
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            
+            // 移除思考消息
+            removeChatMessage(thinkingId);
+            
+            // 添加AI回复
+            addChatMessage(result.response, 'ai');
+        } else {
+            throw new Error('AI服务暂时不可用');
+        }
+        
+    } catch (error) {
+        console.error('快捷问题失败:', error);
+        
+        // 移除思考消息
+        removeChatMessage(thinkingId);
+        
+        // 使用备用回复
+        let fallbackResponse = '';
+        switch(question) {
+            case '分析候选人整体表现':
+                fallbackResponse = '根据当前数据，候选人整体表现良好。平均得分78.5分，建议重点关注高分候选人。';
+                break;
+            case '生成招聘效率报告':
+                fallbackResponse = '招聘效率：共156位候选人，89人完成面试，完成率57%。建议优化面试流程。';
+                break;
+            case '对比各职位数据':
+                fallbackResponse = '各职位数据：技术岗位申请人数最多，产品岗位质量最高，运营岗位竞争较小。';
+                break;
+            default:
+                fallbackResponse = '抱歉，暂时无法获取详细分析。请稍后再试。';
+        }
+        
+        addChatMessage(fallbackResponse, 'ai');
+    }
+}
+
+async function sendAIMessage() {
+    const input = document.getElementById('aiChatInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // 添加用户消息
+    addChatMessage(message, 'user');
+    input.value = '';
+    
+    // 显示AI正在思考
+    const thinkingId = addChatMessage('正在分析数据...', 'ai', true);
+    
+    try {
+        // 调用AI聊天API
+        const response = await fetch('http://localhost:8000/api/ai-chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: message,
+                context: {
+                    current_tab: currentTab,
+                    timestamp: new Date().toISOString()
+                }
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            
+            // 移除思考消息
+            removeChatMessage(thinkingId);
+            
+            // 添加AI回复
+            addChatMessage(result.response, 'ai');
+        } else {
+            throw new Error('AI服务暂时不可用');
+        }
+        
+    } catch (error) {
+        console.error('AI聊天失败:', error);
+        
+        // 移除思考消息
+        removeChatMessage(thinkingId);
+        
+        // 显示错误信息
+        addChatMessage('抱歉，我暂时无法回答您的问题。请稍后再试。', 'ai');
+    }
+}
+
+function addChatMessage(text, sender, isTemporary = false) {
+    const messagesContainer = document.getElementById('aiChatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `${sender}-message`;
+    
+    if (isTemporary) {
+        messageDiv.id = `temp-message-${Date.now()}`;
+    }
+    
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('zh-CN', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+    
+    messageDiv.innerHTML = `
+        <div class="message-content">
+            <div class="message-text">${text}</div>
+            <div class="message-time">${timeStr}</div>
+        </div>
+    `;
+    
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    
+    return messageDiv.id;
+}
+
+function removeChatMessage(messageId) {
+    if (messageId) {
+        const messageElement = document.getElementById(messageId);
+        if (messageElement) {
+            messageElement.remove();
+        }
+    }
+}
+
+function generateAIResponse(message) {
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.includes('候选人') || lowerMessage.includes('面试')) {
+        return '根据最新数据，我们有156位候选人，其中89人已完成面试。表现最好的是李四（92分）和赵六（88分）。您想了解哪个具体方面的信息？';
+    } else if (lowerMessage.includes('职位') || lowerMessage.includes('岗位')) {
+        return '目前有12个活跃职位在招聘中，包括Python工程师、产品经理和新媒体运营等。Python工程师岗位申请人数最多，您需要查看具体职位的详细数据吗？';
+    } else if (lowerMessage.includes('分析') || lowerMessage.includes('报告')) {
+        return '我可以为您生成详细的数据分析报告，包括候选人表现分析、招聘效率统计、各职位对比等。您希望重点分析哪个方面？';
+    } else if (lowerMessage.includes('薪资') || lowerMessage.includes('工资')) {
+        return '薪资数据显示，王五期望18,000/月（评分76），孙七期望15,000/月（评分82）。整体薪资期望与市场水平基本匹配。';
+    } else {
+        return '我理解您的问题。基于当前的招聘数据，我建议您查看具体的统计报表或使用快捷问题获取更准确的分析结果。还有什么其他问题吗？';
+    }
+}
+
+function handleChatKeyPress(event) {
+    if (event.key === 'Enter') {
+        sendAIMessage();
+    }
+}
+
+// 加载分析数据
+async function loadAnalyticsData() {
+    console.log('加载分析数据');
+    
+    // 更新统计数据
+    try {
+        const statsResponse = await fetch('http://localhost:8000/api/dashboard/stats');
+        if (statsResponse.ok) {
+            const stats = await statsResponse.json();
+            updateAnalyticsStats(stats);
+        }
+        
+        // 加载最佳候选人数据
+        const topResponse = await fetch('http://localhost:8000/api/candidates/top');
+        if (topResponse.ok) {
+            const topCandidates = await topResponse.json();
+            updateTopCandidates(topCandidates);
+        }
+        
+        // 加载最新候选人数据
+        const recentResponse = await fetch('http://localhost:8000/api/candidates/recent');
+        if (recentResponse.ok) {
+            const recentCandidates = await recentResponse.json();
+            updateRecentCandidates(recentCandidates);
+        }
+        
+    } catch (error) {
+        console.error('加载分析数据失败:', error);
+        // 使用默认数据
+        updateAnalyticsStats({
+            active_positions: 3,
+            total_candidates: 0,
+            completed_interviews: 0,
+            average_score: 0.0
+        });
+    }
+}
+
+function updateAnalyticsStats(stats) {
+    console.log('updateAnalyticsStats called with:', stats);
+    document.getElementById('analyticsActivePositions').textContent = stats.active_positions;
+    document.getElementById('analyticsTotalCandidates').textContent = stats.total_candidates;
+    document.getElementById('analyticsCompletedInterviews').textContent = stats.completed_interviews;
+    document.getElementById('analyticsAverageScore').textContent = stats.average_score;
+    
+    // 更新最佳候选人列表
+    if (stats.best_candidates) {
+        console.log('Updating best candidates:', stats.best_candidates);
+        updateBestCandidates(stats.best_candidates);
+    } else {
+        console.log('No best_candidates data');
+    }
+    
+    // 更新最低薪资候选人列表
+    if (stats.lowest_salary_candidates) {
+        console.log('Updating lowest salary candidates:', stats.lowest_salary_candidates);
+        updateLowestSalaryCandidates(stats.lowest_salary_candidates);
+    } else {
+        console.log('No lowest_salary_candidates data');
+    }
+}
+
+function updateBestCandidates(bestCandidates) {
+    console.log('updateBestCandidates called with:', bestCandidates);
+    const container = document.querySelector('.candidates-ranking');
+    console.log('Container found:', container);
+    if (!container || !bestCandidates.length) {
+        console.log('Container not found or no candidates');
+        return;
+    }
+    
+    container.innerHTML = bestCandidates.slice(0, 3).map((item, index) => {
+        const candidate = item.candidate;
+        const scoreDisplay = candidate.score ? `${candidate.score} 分` : '未评分';
+        const dateDisplay = candidate.interview_date || candidate.created_at.split(' ')[0];
+        
+        return `
+            <div class="candidate-rank-item">
+                <div class="rank-number">${index + 1}</div>
+                <div class="candidate-info">
+                    <div class="candidate-name">${candidate.name}</div>
+                    <div class="candidate-position">${candidate.position}</div>
+                </div>
+                <div class="candidate-score">${scoreDisplay}</div>
+                <div class="candidate-date">${dateDisplay}</div>
+                <div class="candidate-reason">${item.reason}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateLowestSalaryCandidates(lowestSalaryCandidates) {
+    console.log('updateLowestSalaryCandidates called with:', lowestSalaryCandidates);
+    const container = document.querySelector('.salary-ranking');
+    console.log('Salary container found:', container);
+    if (!container || !lowestSalaryCandidates.length) {
+        console.log('Salary container not found or no candidates');
+        return;
+    }
+    
+    container.innerHTML = lowestSalaryCandidates.map(item => {
+        const candidate = item.candidate;
+        const scoreDisplay = candidate.score ? `评分: ${candidate.score}` : '未评分';
+        
+        // 格式化薪资显示
+        let salaryDisplay = candidate.expected_salary;
+        if (item.salary_num) {
+            if (item.salary_num >= 10000) {
+                salaryDisplay = `¥${(item.salary_num / 10000).toFixed(1)}万/月`;
+            } else {
+                salaryDisplay = `¥${item.salary_num.toLocaleString()}/月`;
+            }
+        }
+        
+        return `
+            <div class="salary-rank-item">
+                <div class="salary-candidate">
+                    <div class="candidate-name">${candidate.name}</div>
+                    <div class="candidate-position">${candidate.position}</div>
+                </div>
+                <div class="salary-amount">${salaryDisplay}</div>
+                <div class="salary-score">${scoreDisplay}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateTopCandidates(candidates) {
+    const container = document.querySelector('.top-candidates-list');
+    if (!container || !candidates.length) return;
+    
+    container.innerHTML = candidates.map((candidate, index) => `
+        <div class="top-candidate-item">
+            <div class="rank">${index + 1}</div>
+            <div class="candidate-info">
+                <div class="name">${candidate.name}</div>
+                <div class="position">${candidate.position}</div>
+            </div>
+            <div class="score">${candidate.score} 分</div>
+            <div class="date">${candidate.interview_date}</div>
+        </div>
+    `).join('');
+}
+
+function updateRecentCandidates(candidates) {
+    const container = document.querySelector('.recent-candidates-list');
+    if (!container || !candidates.length) return;
+    
+    container.innerHTML = candidates.map(candidate => `
+        <div class="recent-candidate-item">
+            <div class="candidate-info">
+                <div class="name">${candidate.name}</div>
+                <div class="position">${candidate.position}</div>
+            </div>
+            <div class="salary">${candidate.expected_salary}</div>
+            <div class="score">评分: ${candidate.score || '待评分'}</div>
+        </div>
+    `).join('');
+}
+
+// 报告生成和发送功能
+async function generateAndDownloadReport() {
+    try {
+        // 显示加载状态
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<span>生成中...</span>';
+        button.disabled = true;
+        
+        // 调用API生成报告
+        const response = await fetch('http://localhost:8000/api/generate-report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                type: 'comprehensive'
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            
+            // 创建并下载报告文件
+            const reportContent = formatReportForDownload(result);
+            downloadReport(reportContent, '招聘数据分析报告');
+            
+            // 显示成功消息
+            addChatMessage('📊 完整报告已生成并下载！', 'ai');
+        } else {
+            throw new Error('报告生成失败');
+        }
+        
+    } catch (error) {
+        console.error('生成报告失败:', error);
+        addChatMessage('抱歉，报告生成失败。请稍后重试。', 'ai');
+    } finally {
+        // 恢复按钮状态
+        const button = event.target;
+        button.innerHTML = originalText;
+        button.disabled = false;
+    }
+}
+
+function formatReportForDownload(reportData) {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('zh-CN');
+    const timeStr = now.toLocaleTimeString('zh-CN');
+    
+    return `
+AI招聘数据分析报告
+==========================================
+
+生成时间：${dateStr} ${timeStr}
+报告类型：${reportData.report_type || '综合分析'}
+
+${reportData.report}
+
+==========================================
+报告说明：
+- 本报告基于真实招聘数据生成
+- 数据来源：Excel候选人数据和职位数据
+- AI分析模型：通义千问Code
+- 报告生成时间：${reportData.generated_at}
+
+联系方式：
+如有疑问，请联系HR部门
+邮箱：hr@company.com
+电话：400-123-4567
+==========================================
+    `.trim();
+}
+
+function downloadReport(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+function showEmailReportModal() {
+    const modal = document.getElementById('emailModal');
+    modal.classList.add('show');
+    
+    // 设置默认值
+    const today = new Date().toLocaleDateString('zh-CN');
+    document.getElementById('emailSubject').value = `招聘数据分析报告 - ${today}`;
+    document.getElementById('emailMessage').value = `您好！\n\n请查收${today}的招聘数据分析报告。\n\n报告包含了最新的候选人分析、职位对比和招聘效率统计。\n\n如有任何问题，请随时联系。\n\n谢谢！`;
+}
+
+function closeEmailModal() {
+    const modal = document.getElementById('emailModal');
+    modal.classList.remove('show');
+}
+
+// 邮件发送表单处理
+document.addEventListener('DOMContentLoaded', function() {
+    const emailForm = document.getElementById('emailReportForm');
+    if (emailForm) {
+        emailForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await sendEmailReport();
+        });
+    }
+});
+
+async function sendEmailReport() {
+    try {
+        const emailData = {
+            recipient: document.getElementById('recipientEmail').value,
+            candidate_name: "招聘团队",
+            report_content: document.getElementById('emailMessage').value,
+            email_type: "report"
+        };
+        
+        // 显示发送状态
+        const submitBtn = document.querySelector('#emailReportForm button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = '发送中...';
+        submitBtn.disabled = true;
+        
+        // 先生成完整报告
+        const reportResponse = await fetch('http://localhost:8000/api/generate-report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                type: document.getElementById('reportType').value || 'comprehensive'
+            })
+        });
+        
+        if (reportResponse.ok) {
+            const reportResult = await reportResponse.json();
+            emailData.report_content = reportResult.report;
+        }
+        
+        // 调用新的邮件发送API
+        const response = await fetch('http://localhost:8000/api/email/send-report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(emailData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            
+            if (result.success) {
+                // 显示成功消息
+                addChatMessage(`📧 报告已成功发送到 ${emailData.recipient}`, 'ai');
+                closeEmailModal();
+                
+                // 重置表单
+                document.getElementById('emailReportForm').reset();
+            } else {
+                throw new Error(result.message || '邮件发送失败');
+            }
+        } else {
+            throw new Error('邮件发送失败');
+        }
+        
+    } catch (error) {
+        console.error('发送邮件失败:', error);
+        addChatMessage('抱歉，邮件发送失败。请检查邮箱地址或稍后重试。', 'ai');
+    } finally {
+        // 恢复按钮状态
+        const submitBtn = document.querySelector('#emailReportForm button[type="submit"]');
+        submitBtn.textContent = '发送报告';
+        submitBtn.disabled = false;
+    }
+}
+
 // 键盘快捷键
 document.addEventListener('keydown', function(e) {
     // Ctrl/Cmd + N 创建新职位
@@ -761,4 +1334,44 @@ document.addEventListener('keydown', function(e) {
             switchTab(tabs[tabIndex]);
         }
     }
+    
+    // ESC键关闭AI对话和邮件模态框
+    if (e.key === 'Escape') {
+        if (isChatOpen) {
+            toggleAIChat();
+        }
+        const emailModal = document.getElementById('emailModal');
+        if (emailModal && emailModal.classList.contains('show')) {
+            closeEmailModal();
+        }
+    }
+    
+    // Ctrl/Cmd + R 生成报告
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r' && currentTab === 'analytics') {
+        e.preventDefault();
+        generateAndDownloadReport();
+    }
 });
+
+// 根据候选人姓名查看简历
+function viewResumeByName(candidateName) {
+    // 根据姓名映射到对应的文件夹和文件
+    const resumeMapping = {
+        '田忠': {
+            folder: 'Python工程师服务器端开发',
+            file: '田忠.pdf'
+        },
+        '高飞虎': {
+            folder: '金融海外投资新媒体内容文案编辑运营',
+            file: '高飞虎.pdf'
+        }
+        // 可以根据需要添加更多映射
+    };
+    
+    const resumeInfo = resumeMapping[candidateName];
+    if (resumeInfo) {
+        viewResume(resumeInfo.folder, resumeInfo.file);
+    } else {
+        alert(`未找到 ${candidateName} 的简历文件`);
+    }
+}

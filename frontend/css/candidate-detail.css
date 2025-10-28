@@ -1,0 +1,416 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f5f7fa;
+    color: #333;
+    line-height: 1.6;
+}
+
+.detail-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* 头部样式 */
+.detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    padding: 20px 0;
+    border-bottom: 1px solid #e1e5e9;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 8px 0;
+    transition: color 0.2s;
+}
+
+.back-btn:hover {
+    color: #333;
+}
+
+.detail-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1a1a;
+    flex: 1;
+    margin-left: 20px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* 按钮样式 */
+.btn-primary, .btn-secondary, .btn-outline, .btn-success, .btn-danger {
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.2s;
+    border: none;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.btn-outline {
+    background: white;
+    color: #007bff;
+    border: 2px solid #007bff;
+}
+
+.btn-outline:hover {
+    background: #007bff;
+    color: white;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #1e7e34;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+/* 卡片样式 */
+.info-card, .evaluation-card, .feedback-card, .interview-record {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f0f0f0;
+}
+
+.info-card h2, .evaluation-card h2, .interview-record h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 20px;
+}
+
+/* 基本信息网格 */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.info-item label {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.info-item span {
+    font-size: 16px;
+    color: #1a1a1a;
+    font-weight: 500;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+/* 评估结果样式 */
+.evaluation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.total-score {
+    font-size: 32px;
+    font-weight: 700;
+    color: #28a745;
+    background: #e8f5e8;
+    padding: 12px 20px;
+    border-radius: 12px;
+}
+
+.evaluation-summary {
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    color: #555;
+    line-height: 1.6;
+}
+
+/* 评分维度样式 */
+.dimensions {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.dimension-item {
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s;
+}
+
+.dimension-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+}
+
+.dimension-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.dimension-name {
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.dimension-score {
+    font-weight: 700;
+    color: #007bff;
+    font-size: 16px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #20c997);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.dimension-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.edit-btn {
+    background: none;
+    border: 1px solid #007bff;
+    color: #007bff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.edit-btn:hover {
+    background: #007bff;
+    color: white;
+}
+
+/* 反馈网格 */
+.feedback-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.feedback-card {
+    position: relative;
+}
+
+.feedback-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.strengths h3 {
+    color: #28a745;
+}
+
+.improvements h3 {
+    color: #ffc107;
+}
+
+.feedback-card ul {
+    list-style: none;
+    padding: 0;
+}
+
+.feedback-card li {
+    padding: 8px 0;
+    position: relative;
+    padding-left: 20px;
+    color: #555;
+    line-height: 1.5;
+}
+
+.strengths li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #28a745;
+    font-weight: bold;
+}
+
+.improvements li::before {
+    content: '!';
+    position: absolute;
+    left: 0;
+    color: #ffc107;
+    font-weight: bold;
+}
+
+.edit-feedback-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.edit-feedback-btn:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+}
+
+/* 面试记录样式 */
+.record-item {
+    margin-bottom: 16px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.question {
+    margin-bottom: 8px;
+    color: #007bff;
+}
+
+.answer {
+    color: #555;
+}
+
+/* 操作按钮 */
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #e1e5e9;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .detail-container {
+        padding: 16px;
+    }
+    
+    .detail-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+    
+    .detail-header h1 {
+        margin-left: 0;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .feedback-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .dimension-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .info-card, .evaluation-card, .feedback-card, .interview-record {
+        padding: 16px;
+    }
+    
+    .total-score {
+        font-size: 24px;
+        padding: 8px 16px;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+}
