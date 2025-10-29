@@ -41,6 +41,14 @@ class InterviewQuestion(BaseModel):
 class CandidateStatusUpdate(BaseModel):
     status: str
 
+class JobCreate(BaseModel):
+    title: str
+    department: str
+    salaryMin: int
+    salaryMax: int
+    description: Optional[str] = ""
+    requirements: Optional[str] = ""
+
 # 初始化数据库
 def init_db():
     conn = sqlite3.connect('recruitment.db')
@@ -83,6 +91,22 @@ def init_db():
             new_status TEXT,
             changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (candidate_id) REFERENCES candidates (id)
+        )
+    ''')
+    
+    # 职位表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS jobs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            department TEXT NOT NULL,
+            salary_min INTEGER,
+            salary_max INTEGER,
+            description TEXT,
+            requirements TEXT,
+            status TEXT DEFAULT '招聘中',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     
@@ -1324,13 +1348,92 @@ async def get_recent_candidates():
 
 @app.get("/api/jobs")
 async def get_jobs():
-    """获取职位列表 - 使用真实Excel数据"""
+    """获取职位列表 - 合并Excel数据和数据库数据"""
     try:
-        jobs = excel_loader.load_jobs()
-        return jobs
+        # 从Excel加载基础数据
+        excel_jobs = excel_loader.load_jobs()
+        
+        # 从数据库加载新创建的职位
+        conn = sqlite3.connect('recruitment.db')
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT id, title, department, salary_min, salary_max, 
+                   description, requirements, status, created_at
+            FROM jobs 
+            ORDER BY created_at DESC
+        ''')
+        
+        db_jobs = []
+        for row in cursor.fetchall():
+            db_jobs.append({
+                'id': row[0] + 1000,  # 避免与Excel数据ID冲突
+                'title': row[1],
+                'department': row[2],
+                'salary': f"¥{row[3]:,} - ¥{row[4]:,}",
+                'salary_min': row[3],
+                'salary_max': row[4],
+                'description': row[5] or '',
+                'requirements': row[6] or '',
+                'status': row[7],
+                'publish_date': row[8].split(' ')[0] if row[8] else '',
+                'candidate_count': 0,  # 可以后续统计
+                'recruiter': 'HR部门',
+                'recruiter_email': 'hr@company.com'
+            })
+        
+        conn.close()
+        
+        # 合并数据，数据库中的职位排在前面
+        all_jobs = db_jobs + excel_jobs
+        return all_jobs
+        
     except Exception as e:
         print(f"加载职位数据失败: {e}")
+        import traceback
+        traceback.print_exc()
         return []
+
+@app.post("/api/jobs")
+async def create_job(job: JobCreate):
+    """创建新职位"""
+    conn = sqlite3.connect('recruitment.db')
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute('''
+            INSERT INTO jobs (title, department, salary_min, salary_max, description, requirements)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (
+            job.title,
+            job.department,
+            job.salaryMin,
+            job.salaryMax,
+            job.description,
+            job.requirements or f"{job.title}职位要求待完善"
+        ))
+        
+        conn.commit()
+        job_id = cursor.lastrowid
+        
+        return {
+            "success": True,
+            "message": "职位创建成功",
+            "job_id": job_id,
+            "job": {
+                "id": job_id + 1000,
+                "title": job.title,
+                "department": job.department,
+                "salary": f"¥{job.salaryMin:,} - ¥{job.salaryMax:,}",
+                "status": "招聘中"
+            }
+        }
+        
+    except Exception as e:
+        print(f"创建职位失败: {e}")
+        raise HTTPException(status_code=500, detail=f"创建职位失败: {str(e)}")
+    finally:
+        conn.close()
 
 # 邮件发送相关的数据模型
 class EmailRequest(BaseModel):
