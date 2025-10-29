@@ -38,6 +38,9 @@ class InterviewQuestion(BaseModel):
     question: str
     answer: Optional[str] = None
 
+class CandidateStatusUpdate(BaseModel):
+    status: str
+
 # 初始化数据库
 def init_db():
     conn = sqlite3.connect('recruitment.db')
@@ -50,7 +53,36 @@ def init_db():
             name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             invitation_code TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            status TEXT DEFAULT '待面试',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # 检查并添加缺失的列
+    cursor.execute('PRAGMA table_info(candidates)')
+    columns = [column[1] for column in cursor.fetchall()]
+    
+    if 'status' not in columns:
+        cursor.execute('ALTER TABLE candidates ADD COLUMN status TEXT DEFAULT "待面试"')
+        print("Added status column to candidates table")
+    
+    if 'updated_at' not in columns:
+        # SQLite不支持添加带有CURRENT_TIMESTAMP默认值的列，所以先添加NULL默认值的列
+        cursor.execute('ALTER TABLE candidates ADD COLUMN updated_at TIMESTAMP')
+        # 然后更新所有现有记录的updated_at为当前时间
+        cursor.execute('UPDATE candidates SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL')
+        print("Added updated_at column to candidates table")
+    
+    # 候选人状态变更日志表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS candidate_status_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            candidate_id INTEGER,
+            old_status TEXT,
+            new_status TEXT,
+            changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (candidate_id) REFERENCES candidates (id)
         )
     ''')
     
@@ -391,6 +423,82 @@ async def get_candidate_evaluation(candidate_id: int):
     except Exception as e:
         print(f"获取评分时出错: {e}")
         raise HTTPException(status_code=500, detail=f"获取评分失败: {str(e)}")
+    finally:
+        conn.close()
+
+@app.put("/api/candidates/{candidate_id}/status")
+async def update_candidate_status(candidate_id: int, status_update: CandidateStatusUpdate):
+    """更新候选人状态"""
+    conn = sqlite3.connect('recruitment.db')
+    cursor = conn.cursor()
+    
+    try:
+        # 首先尝试从数据库查找候选人
+        cursor.execute("SELECT id, name, status FROM candidates WHERE id = ?", (candidate_id,))
+        db_candidate = cursor.fetchone()
+        
+        if db_candidate:
+            # 候选人在数据库中存在，直接更新
+            old_status = db_candidate[2]
+            cursor.execute('''
+                UPDATE candidates 
+                SET status = ?, updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ?
+            ''', (status_update.status, candidate_id))
+            
+            candidate_name = db_candidate[1]
+        else:
+            # 候选人不在数据库中，从Excel数据查找并插入
+            candidates = excel_loader.load_candidates()
+            excel_candidate = None
+            
+            for candidate in candidates:
+                if candidate.get('id') == candidate_id:
+                    excel_candidate = candidate
+                    break
+            
+            if not excel_candidate:
+                raise HTTPException(status_code=404, detail="候选人未找到")
+            
+            # 插入候选人到数据库
+            cursor.execute('''
+                INSERT INTO candidates (id, name, email, invitation_code, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ''', (
+                excel_candidate['id'],
+                excel_candidate['name'],
+                excel_candidate['email'],
+                excel_candidate.get('invitation_code', ''),
+                status_update.status
+            ))
+            
+            candidate_name = excel_candidate['name']
+            old_status = excel_candidate.get('status', '已完成')
+        
+        conn.commit()
+        
+        # 记录状态变更日志
+        cursor.execute('''
+            INSERT INTO candidate_status_log (candidate_id, old_status, new_status, changed_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        ''', (candidate_id, old_status, status_update.status))
+        
+        conn.commit()
+        
+        return {
+            "success": True,
+            "message": f"候选人 {candidate_name} 的状态已更新为 {status_update.status}",
+            "candidate_id": candidate_id,
+            "new_status": status_update.status
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"更新候选人状态失败: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"状态更新失败: {str(e)}")
     finally:
         conn.close()
 
@@ -1237,6 +1345,16 @@ class InvitationRequest(BaseModel):
     interview_time: str
     interview_link: str
 
+class InterviewInviteRequest(BaseModel):
+    recipient: str
+    candidate_name: str = "候选人"
+    subject: str
+    interview_time: str
+    content: str
+    email_type: str = "interview_invite"
+
+
+
 @app.post("/api/email/send-report")
 async def send_report_email_api(email_request: EmailRequest):
     """发送分析报告邮件"""
@@ -1274,6 +1392,57 @@ async def send_invitation_email_api(invitation_request: InvitationRequest):
             
     except Exception as e:
         print(f"发送面试邀请邮件失败: {e}")
+        raise HTTPException(status_code=500, detail=f"邮件发送失败: {str(e)}")
+
+@app.post("/api/email/send-invite")
+async def send_interview_invite_api(invite_request: InterviewInviteRequest):
+    """发送面试邀请邮件（新版本）"""
+    try:
+        # 生成面试链接
+        interview_link = f"http://localhost:3000/interview?email={invite_request.recipient}&time={invite_request.interview_time}"
+        
+        # 使用自定义内容发送邮件
+        success = email_service.send_custom_interview_invitation(
+            recipient_email=invite_request.recipient,
+            candidate_name=invite_request.candidate_name,
+            subject=invite_request.subject,
+            interview_time=invite_request.interview_time,
+            content=invite_request.content,
+            interview_link=interview_link
+        )
+        
+        if success:
+            return {"success": True, "message": f"面试邀请已发送到 {invite_request.recipient}"}
+        else:
+            return {"success": False, "message": "邮件发送失败"}
+            
+    except Exception as e:
+        print(f"发送面试邀请失败: {e}")
+        raise HTTPException(status_code=500, detail=f"邮件发送失败: {str(e)}")
+
+class StatusNotificationRequest(BaseModel):
+    recipient: str
+    candidate_name: str
+    status: str
+    email_type: str = "status_notification"
+
+@app.post("/api/email/send-notification")
+async def send_status_notification_api(notification_request: StatusNotificationRequest):
+    """发送状态通知邮件"""
+    try:
+        success = email_service.send_status_notification(
+            recipient_email=notification_request.recipient,
+            candidate_name=notification_request.candidate_name,
+            status=notification_request.status
+        )
+        
+        if success:
+            return {"success": True, "message": f"状态通知邮件已发送到 {notification_request.recipient}"}
+        else:
+            return {"success": False, "message": "邮件发送失败"}
+            
+    except Exception as e:
+        print(f"发送状态通知邮件失败: {e}")
         raise HTTPException(status_code=500, detail=f"邮件发送失败: {str(e)}")
 
 @app.post("/api/email/test")
