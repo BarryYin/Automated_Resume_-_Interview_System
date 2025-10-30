@@ -1062,3 +1062,316 @@ body {
         height: 48px;
     }
 }
+/* 禁用按钮样
+式 */
+.action-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f8f9fa !important;
+    color: #6c757d !important;
+    border-color: #dee2e6 !important;
+}
+
+.action-btn.disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* 面试反馈按钮样式 */
+.action-btn.feedback {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn.feedback:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    transform: translateY(-2px);
+}
+
+.action-btn.feedback::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.action-btn.feedback:hover::before {
+    left: 100%;
+}
+
+/* 面试反馈选项样式 */
+.feedback-option {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px;
+    border: 2px solid #e9ecef;
+    border-radius: 16px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: left;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.feedback-option::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.6s;
+}
+
+.feedback-option:hover::before {
+    left: 100%;
+}
+
+.feedback-option:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.feedback-option.advance {
+    border-color: #ffc107;
+}
+
+.feedback-option.advance:hover {
+    background: #fff3cd;
+    border-color: #e0a800;
+}
+
+.feedback-option.advance svg {
+    color: #ffc107;
+}
+
+.feedback-option.hire {
+    border-color: #28a745;
+}
+
+.feedback-option.hire:hover {
+    background: #d4edda;
+    border-color: #218838;
+}
+
+.feedback-option.hire svg {
+    color: #28a745;
+}
+
+.feedback-option.reject {
+    border-color: #dc3545;
+}
+
+.feedback-option.reject:hover {
+    background: #f8d7da;
+    border-color: #c82333;
+}
+
+.feedback-option.reject svg {
+    color: #dc3545;
+}
+
+.option-title {
+    font-weight: 600;
+    font-size: 16px;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+}
+
+.option-desc {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* 新增状态徽章样式 */
+.badge.advance {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.badge.hired {
+    background: #d4edda;
+    color: #155724;
+}
+
+.badge.rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* 状态更新动画 */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* 候选人操作区域布局优化 */
+.candidate-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+    min-width: 200px;
+}
+
+.candidate-actions > .action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+    .feedback-option {
+        padding: 12px;
+        gap: 12px;
+    }
+    
+    .option-title {
+        font-size: 14px;
+    }
+    
+    .option-desc {
+        font-size: 12px;
+    }
+    
+    .candidate-actions {
+        align-items: stretch;
+    }
+    
+    .candidate-actions .action-buttons {
+        justify-content: flex-end;
+    }
+}/* 候选人状态指示器样
+式 */
+.candidate-status-indicator {
+    margin-top: 8px;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid;
+}
+
+.status-indicator.completed {
+    background: #e8f5e8;
+    color: #2e7d32;
+    border-color: #4caf50;
+}
+
+.status-indicator.in-progress {
+    background: #fff3e0;
+    color: #f57c00;
+    border-color: #ff9800;
+}
+
+.status-indicator.pending {
+    background: #f3e5f5;
+    color: #7b1fa2;
+    border-color: #9c27b0;
+}
+
+.status-indicator.advance {
+    background: #fff3cd;
+    color: #856404;
+    border-color: #ffc107;
+}
+
+.status-indicator.hired {
+    background: #d4edda;
+    color: #155724;
+    border-color: #28a745;
+    animation: celebration 2s ease-in-out;
+}
+
+.status-indicator.rejected {
+    background: #f8d7da;
+    color: #721c24;
+    border-color: #dc3545;
+}
+
+.status-indicator svg {
+    flex-shrink: 0;
+}
+
+/* 录取庆祝动画 */
+@keyframes celebration {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* 状态指示器响应式 */
+@media (max-width: 768px) {
+    .status-indicator {
+        font-size: 11px;
+        padding: 4px 8px;
+        gap: 6px;
+    }
+    
+    .status-indicator svg {
+        width: 14px;
+        height: 14px;
+    }
+}/* 候
+选人页面头部样式 */
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.header-title h2 {
+    margin-bottom: 4px;
+}
+
+.content-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .content-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+}

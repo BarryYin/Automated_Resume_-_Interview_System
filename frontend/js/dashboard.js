@@ -172,9 +172,15 @@ function renderCandidates(candidates) {
     container.innerHTML = candidates.map(candidate => {
         const statusClass = getStatusClass(candidate.status);
         const scoreDisplay = candidate.score ? `得分: ${candidate.score}` : '';
+        const isCompleted = candidate.status === '已完成';
+        
+        // 邮件按钮状态 - 已面试的候选人按钮置灰
+        const emailButtonClass = isCompleted ? 'action-btn email disabled' : 'action-btn email';
+        const emailButtonText = isCompleted ? '已发送邀请' : '邀请面试';
+        const emailOnClick = isCompleted ? '' : `onclick="sendEmail('${candidate.email}')"`;
         
         return `
-            <div class="candidate-card" data-status="${statusClass}">
+            <div class="candidate-card" data-status="${statusClass}" data-candidate-id="${candidate.id}">
                 <div class="candidate-header">
                     <div class="candidate-info">
                         <h3>${candidate.name}</h3>
@@ -182,25 +188,39 @@ function renderCandidates(candidates) {
                             <span class="badge ${statusClass}">${candidate.status}</span>
                             ${candidate.score ? `<span class="badge score">${scoreDisplay}</span>` : ''}
                         </div>
+                        <div class="candidate-status-indicator">
+                            ${getStatusIndicator(candidate.status)}
+                        </div>
                     </div>
                     <div class="candidate-actions">
-                        <button class="action-btn view" onclick="viewCandidate(${candidate.id})">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                            </svg>
-                            查看详情
-                        </button>
-                        <button class="action-btn resume" onclick="viewResumeByName('${candidate.name}')">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-                            </svg>
-                            简历
-                        </button>
-                        <button class="action-btn email" onclick="sendEmail('${candidate.email}')">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-                            </svg>
-                        </button>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewCandidate(${candidate.id})">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                </svg>
+                                查看详情
+                            </button>
+                            <button class="action-btn resume" onclick="viewResumeByName('${candidate.name}')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                </svg>
+                                简历
+                            </button>
+                            <button class="${emailButtonClass}" ${emailOnClick} ${isCompleted ? 'disabled' : ''} title="${isCompleted ? '候选人已完成面试' : '发送面试邀请邮件'}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                                </svg>
+                                ${emailButtonText}
+                            </button>
+                        </div>
+                        ${isCompleted ? `
+                            <button class="action-btn feedback" onclick="showFeedbackModal(${candidate.id}, '${candidate.name}')" title="为候选人提供面试反馈">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                </svg>
+                                面试反馈
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
                 <div class="candidate-details">
@@ -340,16 +360,27 @@ function createNewPosition() {
                         " placeholder="25000">
                     </div>
                 </div>
-                <div style="margin-bottom: 24px;">
+                <div style="margin-bottom: 16px;">
                     <label style="display: block; margin-bottom: 8px; font-weight: 500;">职位描述</label>
-                    <textarea name="description" rows="4" style="
+                    <textarea name="description" rows="3" style="
                         width: 100%;
                         padding: 12px;
                         border: 1px solid #e1e5e9;
                         border-radius: 8px;
                         font-size: 14px;
                         resize: vertical;
-                    " placeholder="请输入职位描述和要求"></textarea>
+                    " placeholder="请输入职位描述，如工作内容、职责等"></textarea>
+                </div>
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">任职要求</label>
+                    <textarea name="requirements" rows="3" style="
+                        width: 100%;
+                        padding: 12px;
+                        border: 1px solid #e1e5e9;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        resize: vertical;
+                    " placeholder="请输入任职要求，如学历、经验、技能等"></textarea>
                 </div>
                 <div style="display: flex; gap: 12px; justify-content: flex-end;">
                     <button type="button" onclick="closeModal()" style="
@@ -377,14 +408,54 @@ function createNewPosition() {
     document.body.appendChild(modal);
     
     // 绑定表单提交事件
-    document.getElementById('newPositionForm').addEventListener('submit', function(e) {
+    document.getElementById('newPositionForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const formData = new FormData(e.target);
         const positionData = Object.fromEntries(formData);
         
-        console.log('创建新职位:', positionData);
-        alert('职位创建成功！');
-        closeModal();
+        // 显示加载状态
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = '创建中...';
+        submitBtn.disabled = true;
+        
+        try {
+            // 调用后端API创建职位
+            const response = await fetch('http://localhost:8000/api/jobs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(positionData)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 显示成功消息
+                    showStatusUpdateMessage(`职位"${positionData.title}"创建成功！`);
+                    closeModal();
+                    
+                    // 重新加载职位列表
+                    setTimeout(() => {
+                        loadPositionsData();
+                    }, 1000);
+                } else {
+                    throw new Error(result.message || '职位创建失败');
+                }
+            } else {
+                throw new Error('网络请求失败');
+            }
+            
+        } catch (error) {
+            console.error('创建职位失败:', error);
+            alert('职位创建失败，请稍后重试');
+            
+            // 恢复按钮状态
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
     });
     
     // 点击背景关闭
@@ -748,8 +819,202 @@ function downloadResume(apiPath, filename) {
 }
 
 function sendEmail(email) {
-    console.log('发送邮件给:', email);
-    alert(`发送邮件给: ${email}`);
+    console.log('发送面试邀请邮件给:', email);
+    showInterviewInviteModal(email);
+}
+
+// 显示面试邀请邮件模态框
+function showInterviewInviteModal(email) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        ">
+            <div style="display: flex; align-items: center; margin-bottom: 24px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#007bff" style="margin-right: 12px;">
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                </svg>
+                <h3 style="margin: 0; color: #1a1a1a;">发送面试邀请</h3>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #666; font-size: 14px;">
+                    <strong>收件人：</strong> ${email}
+                </p>
+            </div>
+            
+            <form id="interviewInviteForm">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">邮件主题</label>
+                    <input type="text" name="subject" required style="
+                        width: 100%;
+                        padding: 12px;
+                        border: 1px solid #e1e5e9;
+                        border-radius: 8px;
+                        font-size: 14px;
+                    " value="面试邀请 - AI招聘面试系统">
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">面试时间</label>
+                    <input type="datetime-local" name="interviewTime" required style="
+                        width: 100%;
+                        padding: 12px;
+                        border: 1px solid #e1e5e9;
+                        border-radius: 8px;
+                        font-size: 14px;
+                    ">
+                </div>
+                
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">邮件内容</label>
+                    <textarea name="content" rows="6" style="
+                        width: 100%;
+                        padding: 12px;
+                        border: 1px solid #e1e5e9;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        resize: vertical;
+                    " placeholder="请输入面试邀请的详细内容...">您好！
+
+感谢您对我们公司职位的关注和申请。经过初步筛选，我们诚挚邀请您参加面试。
+
+面试详情：
+• 面试方式：在线AI面试
+• 面试链接：[面试链接将自动生成]
+• 请提前5分钟进入面试系统
+
+如有任何问题，请随时联系我们。
+
+期待与您的交流！
+
+HR部门</textarea>
+                </div>
+                
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" onclick="closeInviteModal()" style="
+                        padding: 12px 24px;
+                        border: 2px solid #dee2e6;
+                        background: white;
+                        color: #666;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 500;
+                    ">取消</button>
+                    <button type="submit" style="
+                        padding: 12px 24px;
+                        border: none;
+                        background: #007bff;
+                        color: white;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 500;
+                    ">发送邀请</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 设置默认面试时间（明天上午10点）
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    const timeInput = modal.querySelector('input[name="interviewTime"]');
+    timeInput.value = tomorrow.toISOString().slice(0, 16);
+    
+    // 绑定表单提交事件
+    modal.querySelector('#interviewInviteForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendInterviewInvite(email, e.target);
+    });
+    
+    // 点击背景关闭
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            closeInviteModal();
+        }
+    };
+    
+    // 关闭模态框函数
+    window.closeInviteModal = () => {
+        document.body.removeChild(modal);
+        delete window.closeInviteModal;
+    };
+}
+
+// 发送面试邀请邮件
+async function sendInterviewInvite(email, form) {
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    
+    try {
+        // 显示发送状态
+        submitBtn.textContent = '发送中...';
+        submitBtn.disabled = true;
+        
+        // 准备邮件数据
+        const emailData = {
+            recipient: email,
+            candidate_name: "候选人", // 可以从候选人数据中获取真实姓名
+            subject: formData.get('subject'),
+            interview_time: formData.get('interviewTime'),
+            content: formData.get('content'),
+            email_type: "interview_invite"
+        };
+        
+        // 调用邮件发送API
+        const response = await fetch('http://localhost:8000/api/email/send-invite', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(emailData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            
+            if (result.success) {
+                // 显示成功消息
+                alert(`面试邀请已成功发送到 ${email}`);
+                closeInviteModal();
+            } else {
+                throw new Error(result.message || '邮件发送失败');
+            }
+        } else {
+            throw new Error('邮件发送失败');
+        }
+        
+    } catch (error) {
+        console.error('发送面试邀请失败:', error);
+        alert('发送失败，请检查网络连接或稍后重试');
+    } finally {
+        // 恢复按钮状态
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    }
 }
 
 // 搜索候选人
@@ -1353,6 +1618,11 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+// 添加候选人
+function addCandidate() {
+    window.location.href = 'add-candidate.html';
+}
+
 // 根据候选人姓名查看简历
 function viewResumeByName(candidateName) {
     // 根据姓名映射到对应的文件夹和文件
@@ -1373,5 +1643,475 @@ function viewResumeByName(candidateName) {
         viewResume(resumeInfo.folder, resumeInfo.file);
     } else {
         alert(`未找到 ${candidateName} 的简历文件`);
+    }
+}
+
+// 更新候选人状态
+async function updateCandidateStatus(candidateId, newStatus) {
+    try {
+        // 显示确认对话框
+        const confirmMessage = `确定要将候选人状态更改为"${newStatus}"吗？`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+        
+        // 调用API更新状态
+        const response = await fetch(`http://localhost:8000/api/candidates/${candidateId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                status: newStatus
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            
+            if (result.success) {
+                // 更新UI中的候选人状态
+                updateCandidateCardStatus(candidateId, newStatus);
+                
+                // 显示成功消息
+                showStatusUpdateMessage(`候选人状态已更新为"${newStatus}"`);
+                
+                // 询问是否发送通知邮件给候选人
+                setTimeout(() => {
+                    showNotificationModal(candidateId, newStatus, result.candidate_name || '候选人');
+                }, 1500);
+                
+                // 重新加载候选人数据以确保同步
+                setTimeout(() => {
+                    loadCandidatesData();
+                }, 3000);
+            } else {
+                throw new Error(result.message || '状态更新失败');
+            }
+        } else {
+            throw new Error('网络请求失败');
+        }
+        
+    } catch (error) {
+        console.error('更新候选人状态失败:', error);
+        alert('状态更新失败，请稍后重试');
+    }
+}
+
+// 更新候选人卡片状态（即时UI更新）
+function updateCandidateCardStatus(candidateId, newStatus) {
+    const candidateCard = document.querySelector(`[data-candidate-id="${candidateId}"]`);
+    if (!candidateCard) return;
+    
+    // 更新状态徽章
+    const statusBadge = candidateCard.querySelector('.badge:not(.score)');
+    if (statusBadge) {
+        statusBadge.textContent = newStatus;
+        statusBadge.className = `badge ${getStatusClass(newStatus)}`;
+    }
+    
+    // 更新卡片的data-status属性
+    candidateCard.setAttribute('data-status', getStatusClass(newStatus));
+    
+    // 如果状态变为非"已完成"，移除面试反馈按钮
+    if (newStatus !== '已完成') {
+        const feedbackBtn = candidateCard.querySelector('.action-btn.feedback');
+        if (feedbackBtn) {
+            feedbackBtn.remove();
+        }
+        
+        // 恢复邮件按钮
+        const emailBtn = candidateCard.querySelector('.action-btn.email');
+        if (emailBtn) {
+            emailBtn.classList.remove('disabled');
+            emailBtn.removeAttribute('disabled');
+            emailBtn.setAttribute('onclick', `sendEmail('${candidateCard.querySelector('.email').textContent}')`);
+            emailBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                </svg>
+            `;
+        }
+    } else {
+        // 如果状态变为"已完成"，添加面试反馈按钮
+        const actionButtons = candidateCard.querySelector('.action-buttons');
+        if (actionButtons && !candidateCard.querySelector('.action-btn.feedback')) {
+            const feedbackBtn = document.createElement('button');
+            feedbackBtn.className = 'action-btn feedback';
+            feedbackBtn.onclick = () => showFeedbackModal(candidateId, candidateCard.querySelector('h3').textContent);
+            feedbackBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                </svg>
+                面试反馈
+            `;
+            actionButtons.appendChild(feedbackBtn);
+        }
+    }
+}
+
+// 显示面试反馈模态框
+function showFeedbackModal(candidateId, candidateName) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        ">
+            <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#007bff" style="margin-right: 12px;">
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                </svg>
+                <h3 style="margin: 0; color: #1a1a1a;">面试反馈</h3>
+            </div>
+            
+            <p style="margin-bottom: 24px; color: #666; font-size: 16px;">
+                请为候选人 <strong>${candidateName}</strong> 选择面试结果：
+            </p>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button class="feedback-option advance" onclick="processFeedback(${candidateId}, '进入复试', '${candidateName}')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    <div>
+                        <div class="option-title">进入复试</div>
+                        <div class="option-desc">候选人表现良好，邀请参加下一轮面试</div>
+                    </div>
+                </button>
+                
+                <button class="feedback-option hire" onclick="processFeedback(${candidateId}, '录取试用', '${candidateName}')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                    <div>
+                        <div class="option-title">录取试用</div>
+                        <div class="option-desc">候选人符合要求，直接录取为试用员工</div>
+                    </div>
+                </button>
+                
+                <button class="feedback-option reject" onclick="processFeedback(${candidateId}, '不匹配', '${candidateName}')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                    <div>
+                        <div class="option-title">不匹配</div>
+                        <div class="option-desc">候选人不符合岗位要求，结束招聘流程</div>
+                    </div>
+                </button>
+            </div>
+            
+            <button onclick="closeFeedbackModal()" style="
+                margin-top: 24px;
+                padding: 12px 24px;
+                border: 2px solid #dee2e6;
+                background: white;
+                color: #666;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 500;
+            ">取消</button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 点击背景关闭
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            closeFeedbackModal();
+        }
+    };
+    
+    // 关闭模态框函数
+    window.closeFeedbackModal = () => {
+        document.body.removeChild(modal);
+        delete window.closeFeedbackModal;
+        delete window.processFeedback;
+    };
+    
+    // 处理反馈选择
+    window.processFeedback = (candidateId, status, candidateName) => {
+        closeFeedbackModal();
+        updateCandidateStatus(candidateId, status);
+    };
+}
+
+// 显示通知邮件模态框
+function showNotificationModal(candidateId, newStatus, candidateName) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    `;
+    
+    const statusMessages = {
+        '进入复试': {
+            title: '复试通知',
+            message: '恭喜您通过了初试！我们诚挚邀请您参加下一轮复试。',
+            icon: '🌟'
+        },
+        '录取试用': {
+            title: '录取通知',
+            message: '恭喜您！经过综合评估，我们决定录取您为试用员工。',
+            icon: '🎉'
+        },
+        '不匹配': {
+            title: '面试结果通知',
+            message: '感谢您参与我们的面试。经过慎重考虑，我们认为您暂时不太适合这个职位。',
+            icon: '💼'
+        }
+    };
+    
+    const statusInfo = statusMessages[newStatus] || {
+        title: '状态更新通知',
+        message: `您的面试状态已更新为：${newStatus}`,
+        icon: '📧'
+    };
+    
+    modal.innerHTML = `
+        <div style="
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        ">
+            <div style="font-size: 48px; margin-bottom: 16px;">${statusInfo.icon}</div>
+            <h3 style="margin-bottom: 16px; color: #1a1a1a;">发送通知邮件</h3>
+            <p style="margin-bottom: 24px; color: #666; line-height: 1.6;">
+                是否要向候选人 <strong>${candidateName}</strong> 发送 <strong>${statusInfo.title}</strong> 邮件？
+            </p>
+            
+            <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 24px; text-align: left;">
+                <div style="font-weight: 600; margin-bottom: 8px; color: #495057;">邮件预览内容：</div>
+                <div style="color: #6c757d; font-size: 14px; line-height: 1.5;">
+                    ${statusInfo.message}
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="closeNotificationModal()" style="
+                    padding: 12px 24px;
+                    border: 2px solid #dee2e6;
+                    background: white;
+                    color: #666;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: 500;
+                ">暂不发送</button>
+                <button onclick="sendNotificationEmail(${candidateId}, '${newStatus}', '${candidateName}')" style="
+                    padding: 12px 24px;
+                    border: none;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: 500;
+                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+                ">发送邮件</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 点击背景关闭
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            closeNotificationModal();
+        }
+    };
+    
+    // 关闭模态框函数
+    window.closeNotificationModal = () => {
+        document.body.removeChild(modal);
+        delete window.closeNotificationModal;
+        delete window.sendNotificationEmail;
+    };
+    
+    // 发送通知邮件函数
+    window.sendNotificationEmail = async (candidateId, status, candidateName) => {
+        try {
+            // 获取候选人邮箱
+            const candidates = await getCandidatesList();
+            const candidate = candidates.find(c => c.id == candidateId);
+            
+            if (!candidate) {
+                alert('未找到候选人信息');
+                return;
+            }
+            
+            const emailData = {
+                recipient: candidate.email,
+                candidate_name: candidateName,
+                status: status,
+                email_type: "status_notification"
+            };
+            
+            const response = await fetch('http://localhost:8000/api/email/send-notification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(emailData)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    showStatusUpdateMessage(`通知邮件已发送到 ${candidate.email}`);
+                    closeNotificationModal();
+                } else {
+                    throw new Error(result.message || '邮件发送失败');
+                }
+            } else {
+                throw new Error('网络请求失败');
+            }
+            
+        } catch (error) {
+            console.error('发送通知邮件失败:', error);
+            alert('邮件发送失败，请稍后重试');
+        }
+    };
+}
+
+// 获取候选人列表（用于邮件发送）
+async function getCandidatesList() {
+    try {
+        const response = await fetch('http://localhost:8000/api/candidates');
+        if (response.ok) {
+            return await response.json();
+        }
+        return [];
+    } catch (error) {
+        console.error('获取候选人列表失败:', error);
+        return [];
+    }
+}
+
+// 显示状态更新消息
+function showStatusUpdateMessage(message) {
+    // 创建消息提示
+    const messageDiv = document.createElement('div');
+    messageDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        font-weight: 500;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    messageDiv.textContent = message;
+    document.body.appendChild(messageDiv);
+    
+    // 3秒后自动移除
+    setTimeout(() => {
+        messageDiv.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                document.body.removeChild(messageDiv);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// 扩展状态样式类函数
+function getStatusClass(status) {
+    switch(status) {
+        case '已完成': return 'completed';
+        case '面试中': return 'in-progress';
+        case '待面试': return 'pending';
+        case '进入复试': return 'advance';
+        case '录取试用': return 'hired';
+        case '不匹配': return 'rejected';
+        default: return 'pending';
+    }
+}
+
+// 获取状态指示器
+function getStatusIndicator(status) {
+    switch(status) {
+        case '已完成':
+            return `<div class="status-indicator completed">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                <span>面试已完成，等待反馈</span>
+            </div>`;
+        case '面试中':
+            return `<div class="status-indicator in-progress">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <span>正在进行面试</span>
+            </div>`;
+        case '待面试':
+            return `<div class="status-indicator pending">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                </svg>
+                <span>等待面试邀请</span>
+            </div>`;
+        case '进入复试':
+            return `<div class="status-indicator advance">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                <span>已通过初试，进入复试阶段</span>
+            </div>`;
+        case '录取试用':
+            return `<div class="status-indicator hired">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                <span>🎉 恭喜！已被录取为试用员工</span>
+            </div>`;
+        case '不匹配':
+            return `<div class="status-indicator rejected">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+                <span>很遗憾，暂不符合岗位要求</span>
+            </div>`;
+        default:
+            return `<div class="status-indicator pending">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                </svg>
+                <span>状态待更新</span>
+            </div>`;
     }
 }

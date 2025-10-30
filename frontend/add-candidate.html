@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加候选人 - AI招聘系统</title>
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/add-candidate.css">
+</head>
+<body>
+    <div class="add-candidate-container">
+        <!-- 头部 -->
+        <div class="page-header">
+            <div class="header-left">
+                <button class="back-btn" onclick="goBack()">← 返回</button>
+                <h1>添加候选人</h1>
+            </div>
+        </div>
+        
+        <!-- 主要内容 -->
+        <div class="main-content">
+            <!-- 简历上传区域 -->
+            <div class="upload-section">
+                <h2>上传简历</h2>
+                <p class="section-subtitle">支持PDF、Word格式，AI将自动解析简历内容</p>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" class="upload-icon">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                        </svg>
+                        <h3>拖拽文件到此处或点击上传</h3>
+                        <p>支持 PDF、Word 格式，最大 10MB</p>
+                        <button type="button" class="upload-btn" onclick="triggerFileInput()">选择文件</button>
+                    </div>
+                    <input type="file" id="fileInput" accept=".pdf,.docx,.doc" style="display: none;">
+                </div>
+                
+                <!-- 解析进度 -->
+                <div class="parsing-progress" id="parsingProgress" style="display: none;">
+                    <div class="progress-content">
+                        <div class="spinner"></div>
+                        <div class="progress-text">
+                            <h4>正在解析简历...</h4>
+                            <p id="progressMessage">AI正在分析简历内容，请稍候</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 候选人信息表单 -->
+            <div class="form-section">
+                <h2>候选人信息</h2>
+                <p class="section-subtitle">请确认或补充候选人信息</p>
+                
+                <form id="candidateForm" class="candidate-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name">姓名 *</label>
+                            <input type="text" id="name" name="name" required placeholder="请输入姓名">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">邮箱 *</label>
+                            <input type="email" id="email" name="email" required placeholder="请输入邮箱地址">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="phone">电话</label>
+                            <input type="tel" id="phone" name="phone" placeholder="请输入电话号码">
+                        </div>
+                        <div class="form-group">
+                            <label for="education">学历</label>
+                            <select id="education" name="education">
+                                <option value="">请选择学历</option>
+                                <option value="高中">高中</option>
+                                <option value="大专">大专</option>
+                                <option value="本科">本科</option>
+                                <option value="硕士">硕士</option>
+                                <option value="博士">博士</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="experience">工作经验</label>
+                            <input type="text" id="experience" name="experience" placeholder="如：3年、5年经验">
+                        </div>
+                        <div class="form-group">
+                            <label for="currentPosition">当前职位</label>
+                            <input type="text" id="currentPosition" name="current_position" placeholder="请输入当前职位">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expectedSalary">期望薪资</label>
+                            <input type="text" id="expectedSalary" name="expected_salary" placeholder="如：15K-20K">
+                        </div>
+                        <div class="form-group">
+                            <label for="skills">技能</label>
+                            <input type="text" id="skills" name="skills" placeholder="请输入主要技能，用逗号分隔">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="summary">个人简介</label>
+                        <textarea id="summary" name="summary" rows="3" placeholder="请输入个人简介或亮点"></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="goBack()">取消</button>
+                        <button type="submit" class="btn-primary">保存候选人</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/add-candidate.js"></script>
+</body>
+</html>

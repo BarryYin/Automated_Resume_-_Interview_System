@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -10,6 +10,7 @@ from llm_service import llm_service
 from ai_chat_service import ai_chat_service
 from email_service import email_service
 from excel_data_loader import excel_loader
+from resume_parser import resume_parser
 
 app = FastAPI(title="AI招聘系统API")
 
@@ -49,6 +50,18 @@ class JobCreate(BaseModel):
     description: Optional[str] = ""
     requirements: Optional[str] = ""
 
+class CandidateCreate(BaseModel):
+    name: str
+    email: str
+    phone: Optional[str] = ""
+    education: Optional[str] = ""
+    experience: Optional[str] = ""
+    skills: Optional[str] = ""
+    current_position: Optional[str] = ""
+    expected_salary: Optional[str] = ""
+    summary: Optional[str] = ""
+    invitation_code: Optional[str] = None
+
 # 初始化数据库
 def init_db():
     conn = sqlite3.connect('recruitment.db')
@@ -60,6 +73,14 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
+            phone TEXT,
+            education TEXT,
+            experience TEXT,
+            skills TEXT,
+            current_position TEXT,
+            expected_salary TEXT,
+            summary TEXT,
+            resume_file_path TEXT,
             invitation_code TEXT,
             status TEXT DEFAULT '待面试',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -71,16 +92,30 @@ def init_db():
     cursor.execute('PRAGMA table_info(candidates)')
     columns = [column[1] for column in cursor.fetchall()]
     
-    if 'status' not in columns:
-        cursor.execute('ALTER TABLE candidates ADD COLUMN status TEXT DEFAULT "待面试"')
-        print("Added status column to candidates table")
+    # 添加新字段
+    new_columns = {
+        'phone': 'TEXT',
+        'education': 'TEXT', 
+        'experience': 'TEXT',
+        'skills': 'TEXT',
+        'current_position': 'TEXT',
+        'expected_salary': 'TEXT',
+        'summary': 'TEXT',
+        'resume_file_path': 'TEXT',
+        'status': 'TEXT DEFAULT "待面试"',
+        'updated_at': 'TIMESTAMP'
+    }
     
-    if 'updated_at' not in columns:
-        # SQLite不支持添加带有CURRENT_TIMESTAMP默认值的列，所以先添加NULL默认值的列
-        cursor.execute('ALTER TABLE candidates ADD COLUMN updated_at TIMESTAMP')
-        # 然后更新所有现有记录的updated_at为当前时间
-        cursor.execute('UPDATE candidates SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL')
-        print("Added updated_at column to candidates table")
+    for col_name, col_type in new_columns.items():
+        if col_name not in columns:
+            try:
+                cursor.execute(f'ALTER TABLE candidates ADD COLUMN {col_name} {col_type}')
+                print(f"Added {col_name} column to candidates table")
+            except Exception as e:
+                print(f"Column {col_name} might already exist: {e}")
+    
+    # 更新updated_at字段
+    cursor.execute('UPDATE candidates SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL')
     
     # 候选人状态变更日志表
     cursor.execute('''
@@ -1434,6 +1469,78 @@ async def create_job(job: JobCreate):
         raise HTTPException(status_code=500, detail=f"创建职位失败: {str(e)}")
     finally:
         conn.close()
+
+@app.post("/api/candidates")
+async def create_candidate(candidate: CandidateCreate):
+    """创建新候选人"""
+    conn = sqlite3.connect('recruitment.db')
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute('''
+            INSERT INTO candidates (
+                name, email, phone, education, experience, skills, 
+                current_position, expected_salary, summary, invitation_code
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            candidate.name,
+            candidate.email,
+            candidate.phone,
+            candidate.education,
+            candidate.experience,
+            candidate.skills,
+            candidate.current_position,
+            candidate.expected_salary,
+            candidate.summary,
+            candidate.invitation_code
+        ))
+        
+        conn.commit()
+        candidate_id = cursor.lastrowid
+        
+        return {
+            "success": True,
+            "message": "候选人创建成功",
+            "candidate_id": candidate_id
+        }
+        
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="邮箱已存在")
+    except Exception as e:
+        print(f"创建候选人失败: {e}")
+        raise HTTPException(status_code=500, detail=f"创建候选人失败: {str(e)}")
+    finally:
+        conn.close()
+
+@app.post("/api/candidates/parse-resume")
+async def parse_resume(file: UploadFile = File(...)):
+    """解析上传的简历文件"""
+    try:
+        # 检查文件类型
+        allowed_types = ['.pdf', '.docx', '.doc']
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        
+        if file_ext not in allowed_types:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"不支持的文件格式。支持的格式: {', '.join(allowed_types)}"
+            )
+        
+        # 检查文件大小 (限制为10MB)
+        file_content = await file.read()
+        if len(file_content) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="文件大小不能超过10MB")
+        
+        # 解析简历
+        result = resume_parser.parse_resume_file(file_content, file.filename)
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"简历解析失败: {e}")
+        raise HTTPException(status_code=500, detail=f"简历解析失败: {str(e)}")
 
 # 邮件发送相关的数据模型
 class EmailRequest(BaseModel):

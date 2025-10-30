@@ -158,9 +158,14 @@
         <!-- 候选人内容 -->
         <div id="candidates-content" class="tab-content">
             <div class="content-header">
-                <h2>候选人列表</h2>
-                <p class="content-subtitle">查看所有候选人的面试情况和评分</p>
-                
+                <div class="header-title">
+                    <h2>候选人列表</h2>
+                    <p class="content-subtitle">查看所有候选人的面试情况和评分</p>
+                </div>
+                <button class="create-btn" onclick="addCandidate()">+ 添加候选人</button>
+            </div>
+            
+            <div class="content-body">
                 <div class="search-filter">
                     <div class="search-box">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -175,11 +180,11 @@
                         <option value="pending">待面试</option>
                     </select>
                 </div>
-            </div>
-            
-            <div class="candidates-list">
-                <!-- 候选人数据将通过JavaScript动态加载 -->
-                <div class="loading-message">正在加载候选人数据...</div>
+                
+                <div class="candidates-list">
+                    <!-- 候选人数据将通过JavaScript动态加载 -->
+                    <div class="loading-message">正在加载候选人数据...</div>
+                </div>
             </div>
         </div>
         
