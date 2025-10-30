@@ -5,7 +5,10 @@ from pydantic import BaseModel
 from typing import List, Optional
 import sqlite3
 import json
-from datetime import datetime
+import hashlib
+import secrets
+import jwt
+from datetime import datetime, timedelta
 from llm_service import llm_service
 from ai_chat_service import ai_chat_service
 from email_service import email_service
@@ -1835,4 +1838,4 @@ async def test_email():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8002)
