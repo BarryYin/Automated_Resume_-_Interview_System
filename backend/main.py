@@ -29,6 +29,18 @@ class Candidate(BaseModel):
     email: str
     invitation_code: Optional[str] = None
 
+# 用户认证相关模型
+class UserLogin(BaseModel):
+    email: str
+    password: str
+    user_type: str = "candidate"  # candidate 或 admin
+
+class UserRegister(BaseModel):
+    name: str
+    email: str
+    password: str
+    user_type: str = "candidate"  # candidate 或 admin
+
 class InterviewSession(BaseModel):
     candidate_id: int
     session_id: str
@@ -170,6 +182,19 @@ def init_db():
         )
     ''')
     
+    # 用户表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            user_type TEXT DEFAULT 'candidate',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -181,6 +206,128 @@ async def startup_event():
 @app.get("/")
 async def root():
     return {"message": "AI招聘系统API"}
+
+# 用户认证API
+@app.post("/api/auth/register")
+async def register_user(user: UserRegister):
+    """用户注册"""
+    import hashlib
+    import secrets
+    
+    conn = sqlite3.connect('recruitment.db')
+    cursor = conn.cursor()
+    
+    try:
+        # 检查邮箱是否已存在
+        cursor.execute("SELECT id FROM users WHERE email = ?", (user.email,))
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="邮箱已被注册")
+        
+        # 生成密码哈希
+        salt = secrets.token_hex(16)
+        password_hash = hashlib.pbkdf2_hmac('sha256', user.password.encode(), salt.encode(), 100000)
+        password_hash_hex = salt + password_hash.hex()
+        
+        # 插入用户
+        cursor.execute('''
+            INSERT INTO users (name, email, password_hash, user_type)
+            VALUES (?, ?, ?, ?)
+        ''', (user.name, user.email, password_hash_hex, user.user_type))
+        
+        conn.commit()
+        user_id = cursor.lastrowid
+        
+        return {
+            "success": True,
+            "message": "注册成功",
+            "user": {
+                "id": user_id,
+                "name": user.name,
+                "email": user.email,
+                "user_type": user.user_type
+            }
+        }
+        
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="邮箱已被注册")
+    except Exception as e:
+        print(f"注册失败: {e}")
+        raise HTTPException(status_code=500, detail=f"注册失败: {str(e)}")
+    finally:
+        conn.close()
+
+@app.post("/api/auth/login")
+async def login_user(user: UserLogin):
+    """用户登录"""
+    import hashlib
+    import secrets
+    import jwt
+    from datetime import datetime, timedelta
+    
+    conn = sqlite3.connect('recruitment.db')
+    cursor = conn.cursor()
+    
+    try:
+        # 查找用户
+        cursor.execute('''
+            SELECT id, name, email, password_hash, user_type 
+            FROM users 
+            WHERE email = ?
+        ''', (user.email,))
+        
+        db_user = cursor.fetchone()
+        
+        if not db_user:
+            raise HTTPException(status_code=401, detail="邮箱或密码错误")
+        
+        user_id, name, email, stored_hash, db_user_type = db_user
+        
+        # 验证用户类型
+        if user.user_type != db_user_type:
+            if user.user_type == "admin" and db_user_type != "admin":
+                raise HTTPException(status_code=401, detail="该账号不是管理员账号")
+            elif user.user_type == "candidate" and db_user_type != "candidate":
+                raise HTTPException(status_code=401, detail="该账号不是候选人账号")
+        
+        # 验证密码
+        salt = stored_hash[:32]  # 前32个字符是salt
+        stored_password_hash = stored_hash[32:]  # 后面是密码哈希
+        
+        password_hash = hashlib.pbkdf2_hmac('sha256', user.password.encode(), salt.encode(), 100000)
+        
+        if password_hash.hex() != stored_password_hash:
+            raise HTTPException(status_code=401, detail="邮箱或密码错误")
+        
+        # 生成JWT token
+        secret_key = "your-secret-key-here"  # 在生产环境中应该使用环境变量
+        payload = {
+            "user_id": user_id,
+            "email": email,
+            "user_type": db_user_type,
+            "exp": datetime.utcnow() + timedelta(days=7)
+        }
+        
+        token = jwt.encode(payload, secret_key, algorithm="HS256")
+        
+        return {
+            "success": True,
+            "message": "登录成功",
+            "token": token,
+            "user": {
+                "id": user_id,
+                "name": name,
+                "email": email,
+                "user_type": db_user_type
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"登录失败: {e}")
+        raise HTTPException(status_code=500, detail=f"登录失败: {str(e)}")
+    finally:
+        conn.close()
 
 @app.post("/api/candidates")
 async def create_candidate(candidate: Candidate):
