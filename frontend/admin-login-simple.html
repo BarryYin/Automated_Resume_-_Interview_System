@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员登录</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .login-header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .login-btn:hover {
+            opacity: 0.9;
+        }
+        .back-link {
+            text-align: center;
+        }
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .message {
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>管理员登录</h1>
+            <p>请输入管理员账号信息</p>
+        </div>
+        
+        <div id="message" class="message hidden"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">邮箱地址</label>
+                <input type="email" id="email" name="email" required placeholder="admin@test.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" required placeholder="请输入密码">
+            </div>
+            
+            <div class="form-group">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="rememberMe" style="margin-right: 8px;">
+                    记住我（7天内自动登录）
+                </label>
+            </div>
+            
+            <button type="submit" class="login-btn">登录管理后台</button>
+        </form>
+        
+        <div class="back-link">
+            <a href="index.html">← 返回首页</a>
+        </div>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; font-size: 14px;">
+            <strong>测试账号：</strong><br>
+            邮箱：admin@test.com<br>
+            密码：123456
+        </div>
+    </div>
+
+    <script>
+        // 页面加载时检查是否已经登录
+        document.addEventListener('DOMContentLoaded', function() {
+            checkExistingLogin();
+            loadRememberedEmail();
+        });
+
+        // 检查现有登录状态
+        function checkExistingLogin() {
+            const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+            const user = localStorage.getItem('adminUser');
+            
+            if (token && user) {
+                try {
+                    const userData = JSON.parse(user);
+                    if (userData.user_type === 'admin') {
+                        showMessage('检测到已登录状态，正在跳转...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 1000);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('解析登录状态失败:', error);
+                    clearLoginData();
+                }
+            }
+        }
+
+        // 加载记住的邮箱
+        function loadRememberedEmail() {
+            const rememberedEmail = localStorage.getItem('rememberedEmail');
+            if (rememberedEmail) {
+                document.getElementById('email').value = rememberedEmail;
+                document.getElementById('rememberMe').checked = true;
+            }
+        }
+
+        // 清除登录数据
+        function clearLoginData() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            sessionStorage.removeItem('adminToken');
+        }
+
+        // 设置Cookie
+        function setCookie(name, value, days) {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+        }
+
+        // 获取Cookie
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
+            
+            showMessage('正在验证管理员身份...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password,
+                        user_type: 'admin'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    if (result.user && result.user.user_type === 'admin') {
+                        // 保存登录信息
+                        const loginData = {
+                            token: result.token,
+                            user: result.user,
+                            loginTime: new Date().getTime()
+                        };
+
+                        if (rememberMe) {
+                            // 记住我：保存到localStorage（持久化）
+                            localStorage.setItem('adminToken', result.token);
+                            localStorage.setItem('adminUser', JSON.stringify(result.user));
+                            localStorage.setItem('adminLoginTime', loginData.loginTime.toString());
+                            localStorage.setItem('rememberedEmail', email);
+                            
+                            // 设置Cookie作为备份
+                            setCookie('adminToken', result.token, 7);
+                            setCookie('adminUser', JSON.stringify(result.user), 7);
+                        } else {
+                            // 不记住我：只保存到sessionStorage（会话级别）
+                            sessionStorage.setItem('adminToken', result.token);
+                            sessionStorage.setItem('adminUser', JSON.stringify(result.user));
+                            localStorage.removeItem('rememberedEmail');
+                        }
+                        
+                        showMessage('登录成功！正在跳转到管理后台...', 'success');
+                        
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 1500);
+                    } else {
+                        showMessage('该账号不是管理员账号，请使用管理员权限的账号登录', 'error');
+                    }
+                } else {
+                    showMessage(result.message || '登录失败，请检查邮箱和密码', 'error');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage('网络连接失败，请稍后重试', 'error');
+            }
+        });
+        
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = 'message ' + type;
+            messageEl.classList.remove('hidden');
+            
+            if (type === 'info') {
+                setTimeout(() => {
+                    messageEl.classList.add('hidden');
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录状态测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .status { padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>登录状态检测工具</h1>
+    
+    <div id="status"></div>
+    
+    <h2>操作按钮</h2>
+    <button onclick="checkLoginStatus()">检查登录状态</button>
+    <button onclick="clearAllData()">清除所有登录数据</button>
+    <button onclick="testLogin()">测试登录</button>
+    <button onclick="goToHome()">返回首页</button>
+    <button onclick="goToDashboard()">跳转管理后台</button>
+    
+    <h2>详细信息</h2>
+    <div id="details"></div>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function showDetails(details) {
+            document.getElementById('details').innerHTML = `<pre>${details}</pre>`;
+        }
+
+        function checkLoginStatus() {
+            const localStorage_token = localStorage.getItem('adminToken');
+            const localStorage_user = localStorage.getItem('adminUser');
+            const sessionStorage_token = sessionStorage.getItem('adminToken');
+            const sessionStorage_user = sessionStorage.getItem('adminUser');
+            
+            let details = `=== 登录状态检查 ===\n`;
+            details += `localStorage.adminToken: ${localStorage_token ? '存在' : '不存在'}\n`;
+            details += `localStorage.adminUser: ${localStorage_user ? '存在' : '不存在'}\n`;
+            details += `sessionStorage.adminToken: ${sessionStorage_token ? '存在' : '不存在'}\n`;
+            details += `sessionStorage.adminUser: ${sessionStorage_user ? '存在' : '不存在'}\n\n`;
+            
+            if (localStorage_user) {
+                try {
+                    const userData = JSON.parse(localStorage_user);
+                    details += `localStorage用户信息:\n${JSON.stringify(userData, null, 2)}\n\n`;
+                } catch (e) {
+                    details += `localStorage用户信息解析失败: ${e.message}\n\n`;
+                }
+            }
+            
+            if (sessionStorage_user) {
+                try {
+                    const userData = JSON.parse(sessionStorage_user);
+                    details += `sessionStorage用户信息:\n${JSON.stringify(userData, null, 2)}\n\n`;
+                } catch (e) {
+                    details += `sessionStorage用户信息解析失败: ${e.message}\n\n`;
+                }
+            }
+            
+            // 检查Cookie
+            details += `Cookies: ${document.cookie}\n\n`;
+            
+            const hasValidLogin = (localStorage_token && localStorage_user) || (sessionStorage_token && sessionStorage_user);
+            
+            if (hasValidLogin) {
+                showStatus('检测到登录状态', 'success');
+            } else {
+                showStatus('未检测到登录状态', 'error');
+            }
+            
+            showDetails(details);
+        }
+
+        function clearAllData() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            localStorage.removeItem('adminLoginTime');
+            localStorage.removeItem('rememberedEmail');
+            sessionStorage.removeItem('adminToken');
+            sessionStorage.removeItem('adminUser');
+            
+            // 清除Cookie
+            document.cookie = 'adminToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            document.cookie = 'adminUser=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            
+            showStatus('所有登录数据已清除', 'info');
+            checkLoginStatus();
+        }
+
+        async function testLogin() {
+            showStatus('正在测试登录...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8002/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@test.com',
+                        password: '123456',
+                        user_type: 'admin'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // 保存登录信息到localStorage
+                    localStorage.setItem('adminToken', result.token);
+                    localStorage.setItem('adminUser', JSON.stringify(result.user));
+                    
+                    showStatus('测试登录成功！', 'success');
+                    checkLoginStatus();
+                } else {
+                    showStatus(`登录失败: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`网络错误: ${error.message}`, 'error');
+            }
+        }
+
+        function goToHome() {
+            window.location.href = 'index.html';
+        }
+
+        function goToDashboard() {
+            window.location.href = 'dashboard.html';
+        }
+
+        // 页面加载时自动检查状态
+        document.addEventListener('DOMContentLoaded', function() {
+            checkLoginStatus();
+        });
+    </script>
+</body>
+</html>

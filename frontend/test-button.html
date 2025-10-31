@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>按钮测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 50px; text-align: center; }
+        .test-btn { 
+            padding: 20px 40px; 
+            font-size: 18px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            margin: 10px;
+        }
+        .test-btn:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>按钮功能测试</h1>
+    
+    <button class="test-btn" onclick="testFunction()">测试按钮1 - 调用函数</button>
+    <br>
+    <button class="test-btn" onclick="alert('直接alert测试'); window.location.href='admin-login-simple.html';">测试按钮2 - 直接跳转</button>
+    <br>
+    <button class="test-btn" onclick="window.location.href='admin-login-simple.html';">测试按钮3 - 简单跳转</button>
+
+    <script>
+        function testFunction() {
+            alert('testFunction被调用了！');
+            console.log('testFunction执行');
+            
+            // 检查登录状态
+            const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+            const user = localStorage.getItem('adminUser');
+            
+            if (token && user) {
+                alert('检测到登录状态，跳转到管理后台');
+                window.location.href = 'dashboard.html';
+            } else {
+                alert('未检测到登录状态，跳转到登录页面');
+                window.location.href = 'admin-login-simple.html';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>按钮测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .create-btn { 
+            background: #1a1a1a; 
+            color: white; 
+            border: none; 
+            padding: 12px 20px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            margin: 10px;
+        }
+        .hidden { display: none !important; }
+        .visible { display: inline-block !important; }
+    </style>
+</head>
+<body>
+    <h1>按钮显示测试</h1>
+    
+    <div class="test-section">
+        <h2>测试按钮</h2>
+        <button class="create-btn" id="createPositionBtn">+ 创建新职位</button>
+        <button class="create-btn" id="addCandidateBtn">+ 添加候选人</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>控制按钮</h2>
+        <button onclick="showPositionBtn()">显示职位按钮</button>
+        <button onclick="showCandidateBtn()">显示候选人按钮</button>
+        <button onclick="hideAllBtns()">隐藏所有按钮</button>
+        <button onclick="checkButtons()">检查按钮状态</button>
+    </div>
+    
+    <div id="status"></div>
+
+    <script>
+        function showPositionBtn() {
+            const createPositionBtn = document.getElementById('createPositionBtn');
+            const addCandidateBtn = document.getElementById('addCandidateBtn');
+            
+            if (createPositionBtn) {
+                createPositionBtn.classList.remove('hidden');
+                createPositionBtn.classList.add('visible');
+            }
+            if (addCandidateBtn) {
+                addCandidateBtn.classList.remove('visible');
+                addCandidateBtn.classList.add('hidden');
+            }
+            updateStatus('显示职位按钮，隐藏候选人按钮');
+        }
+        
+        function showCandidateBtn() {
+            const createPositionBtn = document.getElementById('createPositionBtn');
+            const addCandidateBtn = document.getElementById('addCandidateBtn');
+            
+            if (createPositionBtn) {
+                createPositionBtn.classList.remove('visible');
+                createPositionBtn.classList.add('hidden');
+            }
+            if (addCandidateBtn) {
+                addCandidateBtn.classList.remove('hidden');
+                addCandidateBtn.classList.add('visible');
+            }
+            updateStatus('显示候选人按钮，隐藏职位按钮');
+        }
+        
+        function hideAllBtns() {
+            const createPositionBtn = document.getElementById('createPositionBtn');
+            const addCandidateBtn = document.getElementById('addCandidateBtn');
+            
+            if (createPositionBtn) {
+                createPositionBtn.classList.add('hidden');
+                createPositionBtn.classList.remove('visible');
+            }
+            if (addCandidateBtn) {
+                addCandidateBtn.classList.add('hidden');
+                addCandidateBtn.classList.remove('visible');
+            }
+            updateStatus('隐藏所有按钮');
+        }
+        
+        function checkButtons() {
+            const createPositionBtn = document.getElementById('createPositionBtn');
+            const addCandidateBtn = document.getElementById('addCandidateBtn');
+            
+            let status = '按钮状态检查:\n';
+            status += `职位按钮存在: ${!!createPositionBtn}\n`;
+            status += `候选人按钮存在: ${!!addCandidateBtn}\n`;
+            
+            if (createPositionBtn) {
+                status += `职位按钮可见: ${!createPositionBtn.classList.contains('hidden')}\n`;
+            }
+            if (addCandidateBtn) {
+                status += `候选人按钮可见: ${!addCandidateBtn.classList.contains('hidden')}\n`;
+            }
+            
+            updateStatus(status);
+        }
+        
+        function updateStatus(message) {
+            document.getElementById('status').innerHTML = `<pre>${message}</pre>`;
+        }
+        
+        // 页面加载时检查
+        document.addEventListener('DOMContentLoaded', function() {
+            checkButtons();
+        });
+    </script>
+</body>
+</html>

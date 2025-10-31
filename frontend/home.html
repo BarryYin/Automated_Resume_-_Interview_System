@@ -32,7 +32,24 @@
                         <li>AI 评分和数据分析</li>
                         <li>邮件通知和报告</li>
                     </ul>
-                    <button class="card-button hr-button" onclick="goToHR()">进入 HR 管理端</button>
+                    <button class="card-button hr-button" onclick="
+                        const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+                        const user = localStorage.getItem('adminUser');
+                        if (token && user) {
+                            try {
+                                const userData = JSON.parse(user);
+                                if (userData.user_type === 'admin') {
+                                    window.location.href = 'dashboard.html';
+                                    return;
+                                }
+                            } catch (error) {
+                                localStorage.removeItem('adminToken');
+                                localStorage.removeItem('adminUser');
+                                sessionStorage.removeItem('adminToken');
+                            }
+                        }
+                        window.location.href = 'admin-login-simple.html';
+                    ">管理员登录</button>
                 </div>
             </div>
 
@@ -62,7 +79,73 @@
         </div>
     </div>
 
+    <!-- 管理员登录弹窗 -->
+    <div class="admin-login-modal" id="adminLoginModal">
+        <div class="modal-overlay" onclick="closeAdminLoginModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>管理员登录</h2>
+                <button class="close-btn" onclick="closeAdminLoginModal()">×</button>
+            </div>
+            
+            <form id="adminLoginForm" class="modal-form">
+                <div class="form-group">
+                    <label for="adminEmail">邮箱地址</label>
+                    <input type="email" id="adminEmail" name="email" required placeholder="请输入管理员邮箱">
+                </div>
+                
+                <div class="form-group">
+                    <label for="adminPassword">密码</label>
+                    <input type="password" id="adminPassword" name="password" required placeholder="请输入密码">
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="rememberMe">
+                        <span class="checkmark"></span>
+                        记住我
+                    </label>
+                </div>
+                
+                <button type="submit" class="login-btn">登录管理后台</button>
+                
+                <div class="modal-footer">
+                    <p>还没有管理员账号？<a href="#" onclick="showRegisterModal()">注册管理员</a></p>
+                </div>
+            </form>
+            
+            <!-- 注册表单 -->
+            <form id="adminRegisterForm" class="modal-form hidden">
+                <div class="form-group">
+                    <label for="regName">管理员姓名</label>
+                    <input type="text" id="regName" name="name" required placeholder="请输入姓名">
+                </div>
+                
+                <div class="form-group">
+                    <label for="regEmail">邮箱地址</label>
+                    <input type="email" id="regEmail" name="email" required placeholder="请输入邮箱">
+                </div>
+                
+                <div class="form-group">
+                    <label for="regPassword">密码</label>
+                    <input type="password" id="regPassword" name="password" required placeholder="请输入密码（至少6位）">
+                </div>
+                
+                <div class="form-group">
+                    <label for="regConfirmPassword">确认密码</label>
+                    <input type="password" id="regConfirmPassword" name="confirmPassword" required placeholder="请再次输入密码">
+                </div>
+                
+                <button type="submit" class="login-btn">注册管理员账号</button>
+                
+                <div class="modal-footer">
+                    <p>已有账号？<a href="#" onclick="showLoginModal()">立即登录</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="js/home.js"></script>
 </body>
 
-</html>
+</html>""

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试Dashboard按钮控制</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; }
+        .nav button { padding: 10px 20px; cursor: pointer; }
+        .nav button.active { background: #007bff; color: white; }
+        .create-btn { background: #28a745; color: white; padding: 10px 20px; border: none; cursor: pointer; }
+        .tab-content { display: none; padding: 20px; border: 1px solid #ccc; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>测试Dashboard</h1>
+        <button class="create-btn" id="createPositionBtn">+ 创建新职位</button>
+    </div>
+    
+    <div class="nav">
+        <button class="nav-btn active" data-tab="positions" onclick="switchTab('positions')">岗位管理</button>
+        <button class="nav-btn" data-tab="candidates" onclick="switchTab('candidates')">候选人</button>
+        <button class="nav-btn" data-tab="analytics" onclick="switchTab('analytics')">数据分析</button>
+    </div>
+    
+    <div id="positions-content" class="tab-content active">
+        <h2>岗位管理内容</h2>
+        <p>这里应该显示"创建新职位"按钮</p>
+    </div>
+    
+    <div id="candidates-content" class="tab-content">
+        <h2>候选人内容</h2>
+        <p>这里不应该显示"创建新职位"按钮</p>
+    </div>
+    
+    <div id="analytics-content" class="tab-content">
+        <h2>数据分析内容</h2>
+        <p>这里不应该显示"创建新职位"按钮</p>
+    </div>
+
+    <script>
+        let currentTab = 'positions';
+
+        function switchTab(tabName) {
+            console.log('切换到标签:', tabName);
+            currentTab = tabName;
+            
+            // 更新导航按钮状态
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.tab === tabName) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // 显示对应的内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            const targetContent = document.getElementById(`${tabName}-content`);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+            
+            // 控制"创建新职位"按钮的显示/隐藏
+            const createPositionBtn = document.getElementById('createPositionBtn');
+            if (createPositionBtn) {
+                if (tabName === 'positions') {
+                    createPositionBtn.style.display = 'inline-block';
+                    console.log('显示创建职位按钮');
+                } else {
+                    createPositionBtn.style.display = 'none';
+                    console.log('隐藏创建职位按钮');
+                }
+            } else {
+                console.log('未找到创建职位按钮元素');
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('测试页面加载完成');
+            switchTab('positions');
+        });
+    </script>
+</body>
+</html>

@@ -3,14 +3,102 @@ let currentTab = 'positions';
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard页面加载完成');
     initializeDashboard();
     setupEventListeners();
 });
 
 // 初始化仪表板
 function initializeDashboard() {
+    // 检查管理员登录状态
+    checkAdminAuth();
+    
     // 默认显示岗位管理标签
     switchTab('positions');
+    
+    // 确保按钮初始状态正确 - 默认显示岗位管理，所以显示创建职位按钮
+    setTimeout(() => {
+        const createPositionBtn = document.getElementById('createPositionBtn');
+        if (createPositionBtn) {
+            createPositionBtn.classList.add('visible');
+            createPositionBtn.classList.remove('hidden');
+            console.log('初始化时显示创建职位按钮');
+        }
+        
+        const addCandidateBtn = document.getElementById('addCandidateBtn');
+        if (addCandidateBtn) {
+            addCandidateBtn.classList.add('hidden');
+            addCandidateBtn.classList.remove('visible');
+            console.log('初始化时隐藏添加候选人按钮');
+        }
+    }, 100);
+}
+
+// 检查管理员权限
+function checkAdminAuth() {
+    const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+    const user = localStorage.getItem('adminUser') || sessionStorage.getItem('adminUser');
+    
+    console.log('检查管理员权限...');
+    console.log('Token存在:', !!token);
+    console.log('User存在:', !!user);
+    
+    if (!token || !user) {
+        // 未登录，跳转到首页
+        alert('请先登录管理员账号');
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    try {
+        const userData = JSON.parse(user);
+        if (userData.user_type !== 'admin') {
+            // 不是管理员，跳转到首页
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            sessionStorage.removeItem('adminToken');
+            alert('权限不足，请使用管理员账号登录');
+            window.location.href = 'index.html';
+            return;
+        }
+        
+        // 显示管理员信息
+        updateAdminInfo(userData);
+        
+    } catch (error) {
+        console.error('解析用户数据失败:', error);
+        // 数据损坏，清除并跳转到登录页面
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+        sessionStorage.removeItem('adminToken');
+        window.location.href = 'admin-login.html';
+    }
+}
+
+// 更新管理员信息显示
+function updateAdminInfo(userData) {
+    // 可以在页面上显示管理员姓名等信息
+    const headerTitle = document.querySelector('.dashboard-header h1');
+    if (headerTitle) {
+        headerTitle.textContent = `HR 管理控制台 - 欢迎，${userData.name}`;
+    }
+}
+
+// 管理员登出
+function adminLogout() {
+    // 清除所有登录相关数据
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
+    localStorage.removeItem('adminLoginTime');
+    sessionStorage.removeItem('adminToken');
+    sessionStorage.removeItem('adminUser');
+    
+    // 清除Cookie
+    document.cookie = 'adminToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'adminUser=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    
+    alert('已成功退出登录');
+    window.location.href = 'index.html';
 }
 
 // 设置事件监听器
@@ -39,6 +127,7 @@ function goHome() {
 
 // 标签切换功能
 function switchTab(tabName) {
+    console.log('切换到标签:', tabName);
     currentTab = tabName;
     
     // 更新导航按钮状态
@@ -57,6 +146,38 @@ function switchTab(tabName) {
     const targetContent = document.getElementById(`${tabName}-content`);
     if (targetContent) {
         targetContent.classList.add('active');
+    }
+    
+    // 控制"创建新职位"按钮的显示/隐藏
+    const createPositionBtn = document.getElementById('createPositionBtn');
+    if (createPositionBtn) {
+        if (tabName === 'positions') {
+            createPositionBtn.classList.remove('hidden');
+            createPositionBtn.classList.add('visible');
+            console.log('显示创建职位按钮');
+        } else {
+            createPositionBtn.classList.remove('visible');
+            createPositionBtn.classList.add('hidden');
+            console.log('隐藏创建职位按钮');
+        }
+    } else {
+        console.log('未找到创建职位按钮元素');
+    }
+    
+    // 控制"添加候选人"按钮的显示/隐藏
+    const addCandidateBtn = document.getElementById('addCandidateBtn');
+    if (addCandidateBtn) {
+        if (tabName === 'candidates') {
+            addCandidateBtn.classList.remove('hidden');
+            addCandidateBtn.classList.add('visible');
+            console.log('显示添加候选人按钮');
+        } else {
+            addCandidateBtn.classList.remove('visible');
+            addCandidateBtn.classList.add('hidden');
+            console.log('隐藏添加候选人按钮');
+        }
+    } else {
+        console.log('未找到添加候选人按钮元素');
     }
     
     // 根据标签加载相应数据

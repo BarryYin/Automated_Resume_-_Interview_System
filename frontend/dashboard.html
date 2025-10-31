@@ -15,7 +15,9 @@
                 <button class="back-btn" onclick="goHome()">← 返回首页</button>
                 <h1>HR 管理控制台</h1>
             </div>
-            <button class="create-btn" onclick="createNewPosition()">+ 创建新职位</button>
+            <div class="header-right">
+                <button class="logout-btn" onclick="adminLogout()">退出登录</button>
+            </div>
         </div>
         
         <!-- 导航标签 -->
@@ -43,8 +45,11 @@
         <!-- 岗位管理内容 -->
         <div id="positions-content" class="tab-content active">
             <div class="content-header">
-                <h2>招聘岗位列表</h2>
-                <p class="content-subtitle">管理所有招聘岗位和候选人</p>
+                <div class="header-title">
+                    <h2>招聘岗位列表</h2>
+                    <p class="content-subtitle">管理所有招聘岗位和候选人</p>
+                </div>
+                <button class="create-btn" id="createPositionBtn" onclick="createNewPosition()">+ 创建新职位</button>
             </div>
             
             <div class="positions-list">
@@ -162,7 +167,7 @@
                     <h2>候选人列表</h2>
                     <p class="content-subtitle">查看所有候选人的面试情况和评分</p>
                 </div>
-                <button class="create-btn" onclick="addCandidate()">+ 添加候选人</button>
+                <button class="create-btn" id="addCandidateBtn" onclick="addCandidate()">+ 添加候选人</button>
             </div>
             
             <div class="content-body">

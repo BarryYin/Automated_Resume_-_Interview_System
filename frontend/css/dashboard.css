@@ -28,6 +28,12 @@ body {
     border-bottom: 1px solid #e1e5e9;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .header-left {
     display: flex;
     align-items: center;
@@ -68,6 +74,23 @@ body {
 
 .create-btn:hover {
     background: #333;
+    transform: translateY(-1px);
+}
+
+.logout-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.logout-btn:hover {
+    background: #c82333;
     transform: translateY(-1px);
 }
 
@@ -1374,4 +1397,12 @@ body {
         gap: 16px;
         align-items: stretch;
     }
+}/* 按钮显示
+控制 */
+.create-btn.hidden {
+    display: none !important;
+}
+
+.create-btn.visible {
+    display: inline-block !important;
 }

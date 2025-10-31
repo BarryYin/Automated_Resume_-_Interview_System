@@ -66,9 +66,14 @@
             const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
             const user = localStorage.getItem('adminUser');
             
+            console.log('Token存在:', !!token);
+            console.log('User存在:', !!user);
+            
             if (token && user) {
                 try {
                     const userData = JSON.parse(user);
+                    console.log('用户数据:', userData);
+                    
                     if (userData.user_type === 'admin') {
                         console.log('管理员已登录，跳转到管理后台');
                         window.location.href = 'dashboard.html';

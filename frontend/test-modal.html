@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试弹窗</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-btn { padding: 15px 30px; background: #007bff; color: white; border: none; cursor: pointer; font-size: 16px; }
+        
+        /* 弹窗样式 */
+        .admin-login-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+        }
+
+        .admin-login-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            position: relative;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+            padding: 20px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>测试管理员登录弹窗</h1>
+    <button class="test-btn" onclick="showAdminLoginModal()">点击显示弹窗</button>
+
+    <!-- 管理员登录弹窗 -->
+    <div class="admin-login-modal" id="adminLoginModal">
+        <div class="modal-overlay" onclick="closeAdminLoginModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>管理员登录</h2>
+                <button class="close-btn" onclick="closeAdminLoginModal()">×</button>
+            </div>
+            <p>这是测试弹窗内容</p>
+        </div>
+    </div>
+
+    <script>
+        function showAdminLoginModal() {
+            console.log('showAdminLoginModal 被调用');
+            const modal = document.getElementById('adminLoginModal');
+            console.log('找到弹窗元素:', modal);
+            
+            if (modal) {
+                modal.classList.add('show');
+                console.log('添加show类成功');
+            } else {
+                console.error('未找到弹窗元素');
+            }
+        }
+
+        function closeAdminLoginModal() {
+            console.log('closeAdminLoginModal 被调用');
+            const modal = document.getElementById('adminLoginModal');
+            if (modal) {
+                modal.classList.remove('show');
+                console.log('移除show类成功');
+            }
+        }
+    </script>
+</body>
+</html>
