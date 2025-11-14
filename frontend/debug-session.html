@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>调试会话信息</title>
+</head>
+<body>
+    <h1>当前会话信息</h1>
+    <pre id="sessionInfo"></pre>
+    <button onclick="clearSession()">清除会话</button>
+    <button onclick="updateSession()">更新会话（添加岗位）</button>
+    
+    <script>
+        function displaySession() {
+            const session = localStorage.getItem('interviewSession');
+            document.getElementById('sessionInfo').textContent = session || '无会话信息';
+        }
+        
+        function clearSession() {
+            localStorage.removeItem('interviewSession');
+            alert('会话已清除');
+            displaySession();
+        }
+        
+        function updateSession() {
+            const session = localStorage.getItem('interviewSession');
+            if (session) {
+                const data = JSON.parse(session);
+                const positionMapping = {
+                    "田忠": "Python工程师服务器端开发",
+                    "栾平": "Python工程师服务器端开发",
+                    "包涵": "C端产品经理-AIGC领域",
+                    "乔志天": "C端产品经理-AIGC领域",
+                    "高飞虎": "金融海外投资新媒体内容文案编辑运营",
+                    "龙小天": "金融海外投资新媒体内容文案编辑运营"
+                };
+                data.candidatePosition = positionMapping[data.candidateName] || '未指定岗位';
+                localStorage.setItem('interviewSession', JSON.stringify(data));
+                alert('会话已更新');
+                displaySession();
+            } else {
+                alert('无会话信息');
+            }
+        }
+        
+        displaySession();
+    </script>
+</body>
+</html>

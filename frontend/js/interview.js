@@ -21,10 +21,46 @@ class InterviewSession {
             this.sessionId = session.sessionId;
             this.candidateName = session.candidateName;
             this.candidateEmail = session.candidateEmail;
+            
+            // 如果会话中没有岗位信息，根据姓名推断
+            if (!session.candidatePosition) {
+                const positionMapping = {
+                    "田忠": "Python工程师服务器端开发",
+                    "栾平": "Python工程师服务器端开发",
+                    "包涵": "C端产品经理-AIGC领域",
+                    "乔志天": "C端产品经理-AIGC领域",
+                    "高飞虎": "金融海外投资新媒体内容文案编辑运营",
+                    "龙小天": "金融海外投资新媒体内容文案编辑运营"
+                };
+                this.candidatePosition = positionMapping[this.candidateName] || '未指定岗位';
+            } else {
+                this.candidatePosition = session.candidatePosition;
+            }
+            
             this.startTime = new Date().toISOString();
             
-            // 显示候选人姓名
-            document.getElementById('candidateName').textContent = this.candidateName;
+            // 显示候选人姓名和岗位
+            console.log('设置候选人信息:', this.candidateName, this.candidatePosition);
+            
+            const nameElement = document.getElementById('candidateName');
+            const positionElement = document.getElementById('candidatePosition');
+            
+            console.log('candidateName元素:', nameElement);
+            console.log('candidatePosition元素:', positionElement);
+            
+            if (nameElement) {
+                nameElement.textContent = this.candidateName;
+                console.log('已设置姓名:', this.candidateName);
+            } else {
+                console.error('找不到candidateName元素');
+            }
+            
+            if (positionElement) {
+                positionElement.textContent = this.candidatePosition;
+                console.log('已设置岗位:', this.candidatePosition);
+            } else {
+                console.error('找不到candidatePosition元素');
+            }
         } else {
             // 如果没有会话信息，跳转回首页
             window.location.href = 'index.html';
@@ -121,9 +157,22 @@ class InterviewSession {
                 
                 console.log(`成功获取 ${this.totalQuestions} 个问题`);
                 
-                // 更新会话信息
+                // 更新会话信息，保留candidatePosition字段
                 session.llmSessionId = this.sessionId;
+                // 如果会话中没有岗位信息，根据姓名推断
+                if (!session.candidatePosition) {
+                    const positionMapping = {
+                        "田忠": "Python工程师服务器端开发",
+                        "栾平": "Python工程师服务器端开发",
+                        "包涵": "C端产品经理-AIGC领域",
+                        "乔志天": "C端产品经理-AIGC领域",
+                        "高飞虎": "金融海外投资新媒体内容文案编辑运营",
+                        "龙小天": "金融海外投资新媒体内容文案编辑运营"
+                    };
+                    session.candidatePosition = positionMapping[session.candidateName] || '未指定岗位';
+                }
                 localStorage.setItem('interviewSession', JSON.stringify(session));
+                console.log('更新后的会话信息:', session);
                 
                 this.addMessage('ai', '太好了！我已经为您准备了个性化的面试问题。让我们开始吧！');
             } else {

@@ -737,7 +737,93 @@ async def generate_interview_questions(candidate: Candidate):
 def generate_questions_by_name(candidate_name, position_code):
     """根据候选人姓名生成针对性问题"""
     
-    # 高飞虎的专门问题（金融海外投资新媒体内容文案编辑运营）
+    # 候选人姓名到岗位代码的映射
+    candidate_position_mapping = {
+        "田忠": "1001",      # Python工程师
+        "栾平": "1001",      # Python工程师
+        "包涵": "1002",      # C端产品经理
+        "乔志天": "1002",    # C端产品经理
+        "高飞虎": "1003",    # 新媒体编辑
+        "龙小天": "1003"     # 新媒体编辑
+    }
+    
+    # 如果传入的position_code为空或不正确，从映射表中查找
+    if not position_code or position_code == "1001":
+        position_code = candidate_position_mapping.get(candidate_name, position_code)
+    
+    print(f"候选人 {candidate_name} 的岗位代码: {position_code}")
+    
+    # 为特定候选人生成个性化问题
+    
+    # 乔志天 - C端产品经理-AIGC领域
+    if candidate_name == "乔志天":
+        return {
+            "questions": [
+                {
+                    "id": 1,
+                    "dimension": "Knowledge",
+                    "question": "请介绍一下您对AIGC领域的理解，特别是在C端产品应用方面的认知。",
+                    "follow_up": "您认为AIGC技术会给C端产品带来哪些变革？"
+                },
+                {
+                    "id": 2,
+                    "dimension": "Skill",
+                    "question": "请描述一个您主导的C端产品从0到1的完整过程。",
+                    "follow_up": "在这个过程中，您是如何进行用户需求分析和产品定位的？"
+                },
+                {
+                    "id": 3,
+                    "dimension": "Ability",
+                    "question": "在产品设计中，您如何平衡用户体验和技术实现的可行性？",
+                    "follow_up": "能举个具体的例子说明您是如何做权衡的吗？"
+                },
+                {
+                    "id": 4,
+                    "dimension": "Knowledge",
+                    "question": "您对当前主流的AIGC产品（如ChatGPT、Midjourney等）有什么看法？",
+                    "follow_up": "如果让您设计一款AIGC产品，您会从哪个切入点开始？"
+                },
+                {
+                    "id": 5,
+                    "dimension": "Skill",
+                    "question": "请谈谈您在用户研究和数据分析方面的经验和方法。",
+                    "follow_up": "您通常使用哪些工具和指标来评估产品表现？"
+                },
+                {
+                    "id": 6,
+                    "dimension": "Personality",
+                    "question": "在跨部门协作中，您如何推动产品需求的落地？",
+                    "follow_up": "遇到技术团队和设计团队意见不一致时，您是如何处理的？"
+                },
+                {
+                    "id": 7,
+                    "dimension": "Motivation",
+                    "question": "是什么吸引您选择AIGC领域的产品经理这个方向？",
+                    "follow_up": "您的职业发展规划是什么？"
+                },
+                {
+                    "id": 8,
+                    "dimension": "Ability",
+                    "question": "请描述一次产品迭代优化的经历，以及如何通过数据验证优化效果。",
+                    "follow_up": "这次优化给产品带来了什么具体的改进？"
+                },
+                {
+                    "id": 9,
+                    "dimension": "Value",
+                    "question": "您认为一个优秀的C端产品应该具备哪些核心特质？",
+                    "follow_up": "在产品设计中，您如何平衡商业价值和用户价值？"
+                },
+                {
+                    "id": 10,
+                    "dimension": "Motivation",
+                    "question": "您对我们公司的AIGC产品方向有什么想法和建议？",
+                    "follow_up": "您希望在这个岗位上实现什么目标？"
+                }
+            ],
+            "interview_strategy": "重点考察候选人对AIGC领域的理解、产品思维、用户洞察能力和跨部门协作能力。"
+        }
+    
+    # 高飞虎 - 金融海外投资新媒体内容文案编辑运营
     if candidate_name == "高飞虎":
         return {
             "questions": [
@@ -805,7 +891,7 @@ def generate_questions_by_name(candidate_name, position_code):
             "interview_strategy": "重点考察候选人在金融投资知识、新媒体运营技能、内容创作能力以及对行业的理解程度。"
         }
     
-    # 其他候选人的通用问题
+    # 其他候选人根据岗位代码匹配问题
     position_questions = {
         "1001": generate_python_engineer_questions(),  # Python工程师
         "1002": generate_product_manager_questions(),  # 产品经理

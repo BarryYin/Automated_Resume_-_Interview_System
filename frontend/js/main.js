@@ -40,12 +40,36 @@ document.getElementById('candidateForm').addEventListener('submit', async functi
         
         const result = await response.json();
         
+        // 根据候选人姓名获取岗位信息
+        const positionMapping = {
+            "田忠": "Python工程师服务器端开发",
+            "栾平": "Python工程师服务器端开发",
+            "包涵": "C端产品经理-AIGC领域",
+            "乔志天": "C端产品经理-AIGC领域",
+            "高飞虎": "金融海外投资新媒体内容文案编辑运营",
+            "龙小天": "金融海外投资新媒体内容文案编辑运营"
+        };
+        
+        const candidatePosition = positionMapping[candidateData.name] || "未指定岗位";
+        
+        console.log('候选人姓名:', candidateData.name);
+        console.log('匹配到的岗位:', candidatePosition);
+        
         // 保存会话信息到localStorage
-        localStorage.setItem('interviewSession', JSON.stringify({
+        const sessionData = {
             sessionId: result.session_id,
             candidateName: candidateData.name,
-            candidateEmail: candidateData.email
-        }));
+            candidateEmail: candidateData.email,
+            candidatePosition: candidatePosition,
+            invitationCode: candidateData.invitation_code
+        };
+        
+        console.log('准备保存的会话数据:', sessionData);
+        localStorage.setItem('interviewSession', JSON.stringify(sessionData));
+        
+        // 验证保存是否成功
+        const savedData = JSON.parse(localStorage.getItem('interviewSession'));
+        console.log('保存后读取的会话数据:', savedData);
         
         // 跳转到面试页面
         window.location.href = 'interview.html';

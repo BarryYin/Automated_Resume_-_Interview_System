@@ -153,6 +153,22 @@ body {
     color: #666;
 }
 
+.candidate-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.position-info {
+    font-size: 13px;
+    color: #007bff;
+    font-weight: 500;
+}
+
+.position-info span {
+    color: #007bff;
+}
+
 .progress-info {
     display: flex;
     align-items: center;
