@@ -1,3 +1,15 @@
+// API配置
+const API_CONFIG = {
+    BASE_URL: 'http://localhost:8000',
+    ENDPOINTS: {
+        candidates: '/api/candidates',
+        jobs: '/api/jobs',
+        stats: '/api/dashboard/stats',
+        login: '/api/auth/login',
+        register: '/api/auth/register'
+    }
+};
+
 // 全局变量
 let currentTab = 'positions';
 

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API连接测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>API连接测试</h1>
+    
+    <div class="test-section">
+        <h2>测试1: 后端根路径</h2>
+        <button onclick="testRoot()">测试 GET /</button>
+        <div id="result-root"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试2: 获取候选人列表</h2>
+        <button onclick="testCandidates()">测试 GET /api/candidates</button>
+        <div id="result-candidates"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试3: 获取职位列表</h2>
+        <button onclick="testJobs()">测试 GET /api/jobs</button>
+        <div id="result-jobs"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试4: 获取统计数据</h2>
+        <button onclick="testStats()">测试 GET /api/dashboard/stats</button>
+        <div id="result-stats"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        async function testRoot() {
+            const resultDiv = document.getElementById('result-root');
+            resultDiv.innerHTML = '<p>测试中...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <p><strong>✅ 成功!</strong></p>
+                        <p>状态码: ${response.status}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <p><strong>❌ 失败!</strong></p>
+                        <p>错误: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testCandidates() {
+            const resultDiv = document.getElementById('result-candidates');
+            resultDiv.innerHTML = '<p>测试中...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/candidates`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <p><strong>✅ 成功!</strong></p>
+                        <p>状态码: ${response.status}</p>
+                        <p>候选人数量: ${data.length}</p>
+                        <pre>${JSON.stringify(data.slice(0, 2), null, 2)}</pre>
+                        <p>... (显示前2条数据)</p>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <p><strong>❌ 失败!</strong></p>
+                        <p>错误: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testJobs() {
+            const resultDiv = document.getElementById('result-jobs');
+            resultDiv.innerHTML = '<p>测试中...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/jobs`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <p><strong>✅ 成功!</strong></p>
+                        <p>状态码: ${response.status}</p>
+                        <p>职位数量: ${data.length}</p>
+                        <pre>${JSON.stringify(data.slice(0, 2), null, 2)}</pre>
+                        <p>... (显示前2条数据)</p>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <p><strong>❌ 失败!</strong></p>
+                        <p>错误: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testStats() {
+            const resultDiv = document.getElementById('result-stats');
+            resultDiv.innerHTML = '<p>测试中...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/dashboard/stats`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <p><strong>✅ 成功!</strong></p>
+                        <p>状态码: ${response.status}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <p><strong>❌ 失败!</strong></p>
+                        <p>错误: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // 页面加载时自动测试
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('API测试页面加载完成');
+            console.log('API地址:', API_BASE);
+        });
+    </script>
+</body>
+</html>

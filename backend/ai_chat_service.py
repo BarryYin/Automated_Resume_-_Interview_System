@@ -12,7 +12,7 @@ class AIChatService:
     def __init__(self):
         # 配置通义千问Code API
         self.client = openai.OpenAI(
-            api_key="sk-ebf86b67058945fa827863a3742df0b0",
+            api_key="sk-b20dbc29a6ab4ada8b4711d8b817f7cb",
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
         )
         
