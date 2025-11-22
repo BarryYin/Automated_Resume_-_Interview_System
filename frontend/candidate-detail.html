@@ -159,15 +159,7 @@
         <!-- 面试对话记录 -->
         <div class="interview-record">
             <h2>面试对话记录</h2>
-            <div class="record-item">
-                <div class="question">
-                    <strong>面试官：</strong>能否介绍一下你最近的项目？
-                </div>
-                <div class="answer">
-                    <strong>候选人：</strong>我最近参与了一个电商平台的前端开发...
-                </div>
-            </div>
-            <!-- 更多对话记录 -->
+            <div class="loading-message">正在加载面试记录...</div>
         </div>
 
         <!-- 操作按钮 -->
@@ -189,6 +181,12 @@
     </script>
     <link rel="stylesheet" href="css/pdf-viewer.css">
     <script src="js/pdf-viewer.js"></script>
-    <script src="js/candidate-detail.js"></script>
+    <script src="js/candidate-detail.js?v=3"></script>
+    <script>
+        // 调试脚本
+        console.log('候选人详情页面加载完成');
+        console.log('当前URL:', window.location.href);
+        console.log('URL参数:', new URLSearchParams(window.location.search).get('id'));
+    </script>
 </body>
 </html>

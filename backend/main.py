@@ -1389,6 +1389,112 @@ def get_candidate_name_by_session(session_id):
     finally:
         conn.close()
 
+@app.get("/api/candidates/{candidate_id}/interview-records")
+async def get_candidate_interview_records(candidate_id: int):
+    """获取候选人的面试对话记录"""
+    conn = sqlite3.connect('recruitment.db')
+    cursor = conn.cursor()
+    
+    try:
+        # 首先获取候选人信息
+        cursor.execute("SELECT name, email FROM candidates WHERE id = ?", (candidate_id,))
+        candidate = cursor.fetchone()
+        
+        if not candidate:
+            # 尝试从Excel数据中查找
+            candidates = excel_loader.load_candidates()
+            candidate_data = next((c for c in candidates if c.get('id') == candidate_id), None)
+            if not candidate_data:
+                raise HTTPException(status_code=404, detail="候选人未找到")
+            candidate_name = candidate_data.get('name')
+            candidate_email = candidate_data.get('email')
+        else:
+            candidate_name, candidate_email = candidate
+        
+        # 查找该候选人的面试会话
+        cursor.execute('''
+            SELECT session_id, questions_json, strategy, created_at
+            FROM interview_session_questions
+            WHERE candidate_name = ? OR candidate_email = ?
+            ORDER BY created_at DESC
+        ''', (candidate_name, candidate_email))
+        
+        sessions = cursor.fetchall()
+        
+        if not sessions:
+            return {
+                "candidate_id": candidate_id,
+                "candidate_name": candidate_name,
+                "sessions": [],
+                "message": "该候选人暂无面试记录"
+            }
+        
+        # 获取每个会话的问答记录
+        interview_records = []
+        
+        for session in sessions:
+            session_id, questions_json, strategy, created_at = session
+            
+            # 解析问题列表
+            import json
+            questions = json.loads(questions_json) if questions_json else []
+            
+            # 获取该会话的所有回答
+            cursor.execute('''
+                SELECT question_id, question_text, answer_text, dimension, score, feedback, created_at
+                FROM interview_answers
+                WHERE session_id = ?
+                ORDER BY question_id
+            ''', (session_id,))
+            
+            answers = cursor.fetchall()
+            
+            # 组合问题和回答
+            qa_pairs = []
+            for answer in answers:
+                q_id, q_text, a_text, dimension, score, feedback, answer_time = answer
+                
+                # 找到对应的问题详情
+                question_detail = next((q for q in questions if q.get('id') == q_id), None)
+                
+                qa_pairs.append({
+                    "question_id": q_id,
+                    "question": q_text,
+                    "answer": a_text,
+                    "dimension": dimension,
+                    "score": score,
+                    "feedback": feedback,
+                    "follow_up": question_detail.get('follow_up', '') if question_detail else '',
+                    "answered_at": answer_time
+                })
+            
+            interview_records.append({
+                "session_id": session_id,
+                "interview_date": created_at,
+                "strategy": strategy,
+                "total_questions": len(questions),
+                "answered_questions": len(answers),
+                "qa_pairs": qa_pairs
+            })
+        
+        return {
+            "candidate_id": candidate_id,
+            "candidate_name": candidate_name,
+            "candidate_email": candidate_email,
+            "total_sessions": len(interview_records),
+            "sessions": interview_records
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"获取面试记录失败: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"获取面试记录失败: {str(e)}")
+    finally:
+        conn.close()
+
 @app.post("/api/ai-chat")
 async def ai_chat(message_data: dict):
     """AI数据分析助手对话"""

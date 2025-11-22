@@ -414,3 +414,235 @@ body {
         width: 100%;
     }
 }
+
+/* 
+面试对话记录样式 */
+.interview-record {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    margin-top: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.interview-record h2 {
+    font-size: 22px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.session-container {
+    margin-bottom: 40px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.session-container:last-child {
+    margin-bottom: 0;
+}
+
+.session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.session-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #007bff;
+}
+
+.session-info {
+    display: flex;
+    gap: 20px;
+    font-size: 14px;
+    color: #666;
+}
+
+.session-date {
+    display: flex;
+    align-items: center;
+}
+
+.session-stats {
+    padding: 4px 12px;
+    background: white;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.session-strategy {
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #555;
+    border-left: 3px solid #28a745;
+}
+
+.qa-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.record-item {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.record-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.qa-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.qa-number {
+    font-weight: 600;
+    color: #333;
+    font-size: 15px;
+}
+
+.qa-dimension {
+    padding: 4px 12px;
+    background: #e3f2fd;
+    color: #1976d2;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.qa-score {
+    margin-left: auto;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.qa-score.score-high {
+    background: #d4edda;
+    color: #155724;
+}
+
+.qa-score.score-medium {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.qa-score.score-low {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.question {
+    margin-bottom: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #007bff;
+}
+
+.question strong {
+    color: #007bff;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.follow-up {
+    margin-top: 10px;
+    padding: 10px;
+    background: white;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.follow-up em {
+    color: #666;
+}
+
+.answer {
+    padding: 15px;
+    background: #fff;
+    border-radius: 6px;
+    border-left: 3px solid #28a745;
+    margin-bottom: 12px;
+}
+
+.answer strong {
+    color: #28a745;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.ai-feedback {
+    padding: 12px;
+    background: #fff8e1;
+    border-radius: 6px;
+    border-left: 3px solid #ffc107;
+    font-size: 14px;
+}
+
+.ai-feedback strong {
+    color: #f57c00;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.no-records {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+
+.no-records p {
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.no-records .hint {
+    font-size: 14px;
+    color: #bbb;
+}
+
+
+/* 加载状态 */
+.loading-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+    font-size: 16px;
+}
+
+.loading-message::after {
+    content: '...';
+    animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60%, 100% { content: '...'; }
+}

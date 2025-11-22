@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试面试记录</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 500px;
+        }
+        .qa-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .question {
+            background: #e3f2fd;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 3px solid #007bff;
+        }
+        .answer {
+            background: #f1f8e9;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 3px solid #28a745;
+        }
+        .score {
+            display: inline-block;
+            padding: 5px 10px;
+            background: #ffc107;
+            color: white;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>面试记录测试页面</h1>
+    
+    <div class="test-section">
+        <h2>测试候选人面试记录</h2>
+        <div>
+            <label>候选人ID: </label>
+            <input type="number" id="candidateId" value="2001" style="padding: 5px; width: 100px;">
+            <button onclick="loadRecords()">加载面试记录</button>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>原始JSON数据</h2>
+        <pre id="jsonData">点击"加载面试记录"按钮查看数据...</pre>
+    </div>
+    
+    <div class="test-section">
+        <h2>格式化显示</h2>
+        <div id="formattedData">点击"加载面试记录"按钮查看格式化数据...</div>
+    </div>
+
+    <script>
+        async function loadRecords() {
+            const candidateId = document.getElementById('candidateId').value;
+            const jsonDataEl = document.getElementById('jsonData');
+            const formattedDataEl = document.getElementById('formattedData');
+            
+            jsonDataEl.textContent = '加载中...';
+            formattedDataEl.innerHTML = '加载中...';
+            
+            try {
+                const url = `http://localhost:8000/api/candidates/${candidateId}/interview-records`;
+                console.log('请求URL:', url);
+                
+                const response = await fetch(url);
+                console.log('响应状态:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('数据:', data);
+                
+                // 显示原始JSON
+                jsonDataEl.textContent = JSON.stringify(data, null, 2);
+                
+                // 格式化显示
+                if (data.sessions && data.sessions.length > 0) {
+                    let html = `
+                        <h3>候选人: ${data.candidate_name}</h3>
+                        <p>邮箱: ${data.candidate_email}</p>
+                        <p>面试会话数: ${data.total_sessions}</p>
+                        <hr>
+                    `;
+                    
+                    data.sessions.forEach((session, index) => {
+                        html += `
+                            <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                                <h4>会话 ${index + 1}</h4>
+                                <p>时间: ${session.interview_date}</p>
+                                <p>策略: ${session.strategy}</p>
+                                <p>进度: ${session.answered_questions}/${session.total_questions}</p>
+                                <hr>
+                        `;
+                        
+                        session.qa_pairs.forEach((qa, qIndex) => {
+                            html += `
+                                <div class="qa-item">
+                                    <h5>问题 ${qIndex + 1} - ${qa.dimension} <span class="score">${qa.score}分</span></h5>
+                                    <div class="question">
+                                        <strong>问:</strong> ${qa.question}
+                                    </div>
+                                    <div class="answer">
+                                        <strong>答:</strong> ${qa.answer || '未回答'}
+                                    </div>
+                                    ${qa.feedback ? `<p style="color: #666; font-size: 14px; margin-top: 10px;"><strong>AI评价:</strong> ${qa.feedback}</p>` : ''}
+                                </div>
+                            `;
+                        });
+                        
+                        html += '</div>';
+                    });
+                    
+                    formattedDataEl.innerHTML = html;
+                } else {
+                    formattedDataEl.innerHTML = '<p style="color: #999;">该候选人暂无面试记录</p>';
+                }
+                
+            } catch (error) {
+                console.error('错误:', error);
+                jsonDataEl.textContent = `错误: ${error.message}`;
+                formattedDataEl.innerHTML = `<p style="color: red;">加载失败: ${error.message}</p>`;
+            }
+        }
+        
+        // 页面加载时自动测试
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('测试页面加载完成');
+        });
+    </script>
+</body>
+</html>

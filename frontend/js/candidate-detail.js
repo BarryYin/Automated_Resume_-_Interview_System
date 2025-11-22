@@ -46,13 +46,124 @@ class CandidateDetail {
             this.renderCandidateInfo();
             this.renderEvaluation();
             
+            // 加载面试对话记录
+            await this.loadInterviewRecords();
+            
         } catch (error) {
             console.error('加载候选人数据失败:', error);
             this.loadMockData();
         }
     }
 
-    loadMockData() {
+    async loadInterviewRecords() {
+        console.log('开始加载面试记录，候选人ID:', this.candidateId);
+        try {
+            const url = `http://localhost:8000/api/candidates/${this.candidateId}/interview-records`;
+            console.log('请求URL:', url);
+            
+            const response = await fetch(url);
+            console.log('响应状态:', response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('面试记录数据:', data);
+                this.renderInterviewRecords(data);
+            } else {
+                console.log('该候选人暂无面试记录，状态码:', response.status);
+                this.renderNoInterviewRecords();
+            }
+        } catch (error) {
+            console.error('加载面试记录失败:', error);
+            this.renderNoInterviewRecords();
+        }
+    }
+
+    renderInterviewRecords(data) {
+        console.log('开始渲染面试记录');
+        const recordContainer = document.querySelector('.interview-record');
+        console.log('找到容器:', recordContainer);
+        
+        if (!data.sessions || data.sessions.length === 0) {
+            console.log('没有面试会话数据');
+            this.renderNoInterviewRecords();
+            return;
+        }
+
+        console.log('会话数量:', data.sessions.length);
+        let html = '<h2>面试对话记录</h2>';
+        
+        data.sessions.forEach((session, sessionIndex) => {
+            html += `
+                <div class="session-container">
+                    <div class="session-header">
+                        <h3>面试会话 ${sessionIndex + 1}</h3>
+                        <div class="session-info">
+                            <span class="session-date">面试时间: ${new Date(session.interview_date).toLocaleString('zh-CN')}</span>
+                            <span class="session-stats">已回答 ${session.answered_questions}/${session.total_questions} 题</span>
+                        </div>
+                    </div>
+                    ${session.strategy ? `<div class="session-strategy"><strong>面试策略：</strong>${session.strategy}</div>` : ''}
+                    <div class="qa-list">
+            `;
+            
+            session.qa_pairs.forEach((qa, index) => {
+                const scoreClass = qa.score >= 80 ? 'high' : qa.score >= 60 ? 'medium' : 'low';
+                html += `
+                    <div class="record-item">
+                        <div class="qa-header">
+                            <span class="qa-number">问题 ${index + 1}</span>
+                            <span class="qa-dimension">${this.getDimensionName(qa.dimension)}</span>
+                            <span class="qa-score score-${scoreClass}">${qa.score} 分</span>
+                        </div>
+                        <div class="question">
+                            <strong>面试官：</strong>${qa.question}
+                            ${qa.follow_up ? `<div class="follow-up"><em>追问：${qa.follow_up}</em></div>` : ''}
+                        </div>
+                        <div class="answer">
+                            <strong>候选人：</strong>${qa.answer || '未回答'}
+                        </div>
+                        ${qa.feedback ? `
+                            <div class="ai-feedback">
+                                <strong>AI评价：</strong>${qa.feedback}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+        
+        recordContainer.innerHTML = html;
+    }
+
+    renderNoInterviewRecords() {
+        const recordContainer = document.querySelector('.interview-record');
+        recordContainer.innerHTML = `
+            <h2>面试对话记录</h2>
+            <div class="no-records">
+                <p>该候选人暂无面试对话记录</p>
+                <p class="hint">候选人完成AI面试后，对话记录将显示在这里</p>
+            </div>
+        `;
+    }
+
+    getDimensionName(dimension) {
+        const names = {
+            'Knowledge': '专业知识',
+            'Skill': '专业技能',
+            'Ability': '综合能力',
+            'Personality': '个性特质',
+            'Motivation': '求职动机',
+            'Value': '价值观'
+        };
+        return names[dimension] || dimension;
+    }
+
+    async loadMockData() {
         // 模拟数据
         this.candidateData = {
             id: this.candidateId,
@@ -68,6 +179,9 @@ class CandidateDetail {
         
         this.renderCandidateInfo();
         this.renderEvaluation();
+        
+        // 加载面试对话记录
+        await this.loadInterviewRecords();
     }
 
     renderCandidateInfo() {
