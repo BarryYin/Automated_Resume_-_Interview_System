@@ -4,12 +4,12 @@ class CandidateDetail {
         this.candidateId = null;
         this.candidateData = null;
         this.evaluationData = {
-            knowledge: 85,
-            skill: 88,
-            ability: 82,
-            personality: 86,
-            motivation: 84,
-            value: 87
+            knowledge: null,
+            skill: null,
+            ability: null,
+            personality: null,
+            motivation: null,
+            value: null
         };
         this.init();
     }
@@ -31,7 +31,36 @@ class CandidateDetail {
 
     async loadCandidateData() {
         try {
-            // 从真实数据加载候选人信息
+            // 优先从后端API加载最新的候选人信息
+            const apiResponse = await fetch('http://localhost:8000/api/candidates');
+            
+            if (apiResponse.ok) {
+                const candidates = await apiResponse.json();
+                this.candidateData = candidates.find(c => c.id == this.candidateId);
+                
+                if (this.candidateData) {
+                    console.log('从API加载候选人数据:', this.candidateData);
+                    
+                    // 从候选人数据中提取评分信息
+                    this.extractScoresFromCandidate();
+
+                    this.renderCandidateInfo();
+                    this.renderEvaluation();
+                    
+                    // 尝试从后端加载更详细的评分数据
+                    await this.loadEvaluationFromAPI();
+                    
+                    // 加载面试对话记录
+                    await this.loadInterviewRecords();
+                    
+                    // 加载AI生成的反馈
+                    await this.loadAIFeedback();
+                    return;
+                }
+            }
+            
+            // 如果API失败，尝试从本地JSON文件加载
+            console.log('API加载失败，尝试从本地文件加载');
             const response = await fetch('data/real_data.json');
             const data = await response.json();
             
@@ -43,15 +72,155 @@ class CandidateDetail {
                 return;
             }
 
+            // 从候选人数据中提取评分信息
+            this.extractScoresFromCandidate();
+
             this.renderCandidateInfo();
             this.renderEvaluation();
+            
+            // 尝试从后端加载更详细的评分数据
+            await this.loadEvaluationFromAPI();
             
             // 加载面试对话记录
             await this.loadInterviewRecords();
             
+            // 加载AI生成的反馈
+            await this.loadAIFeedback();
+            
         } catch (error) {
             console.error('加载候选人数据失败:', error);
             this.loadMockData();
+        }
+    }
+
+    async loadAIFeedback(regenerate = false) {
+        console.log('开始加载AI反馈', regenerate ? '(重新生成)' : '(使用缓存)');
+        try {
+            const url = `http://localhost:8000/api/candidates/${this.candidateId}/ai-feedback${regenerate ? '?regenerate=true' : ''}`;
+            console.log('请求URL:', url);
+            
+            const response = await fetch(url);
+            console.log('响应状态:', response.status);
+            
+            if (response.ok) {
+                const feedback = await response.json();
+                console.log('AI反馈数据:', feedback);
+                this.renderFeedback(feedback);
+            } else {
+                const error = await response.text();
+                console.error('加载AI反馈失败:', response.status, error);
+                this.renderFeedbackError('加载失败，请稍后重试');
+            }
+        } catch (error) {
+            console.error('加载AI反馈失败:', error);
+            this.renderFeedbackError('网络错误，请检查连接');
+        }
+    }
+
+    renderFeedbackError(message) {
+        const strengthsList = document.getElementById('strengthsList');
+        const improvementsList = document.getElementById('improvementsList');
+        
+        if (strengthsList) {
+            strengthsList.innerHTML = `<li style="color: #dc3545;">${message}</li>`;
+        }
+        if (improvementsList) {
+            improvementsList.innerHTML = `<li style="color: #dc3545;">${message}</li>`;
+        }
+    }
+
+    renderFeedback(feedback) {
+        console.log('开始渲染反馈');
+        console.log('反馈数据:', feedback);
+        
+        // 渲染优势亮点
+        const strengthsList = document.getElementById('strengthsList');
+        console.log('找到strengthsList元素:', strengthsList);
+        
+        if (strengthsList) {
+            if (feedback.strengths && feedback.strengths.length > 0) {
+                console.log('渲染优势亮点:', feedback.strengths.length, '条');
+                strengthsList.innerHTML = feedback.strengths.map(item => `<li>${item}</li>`).join('');
+            } else {
+                console.log('没有优势亮点数据');
+                strengthsList.innerHTML = '<li>暂无数据</li>';
+            }
+        } else {
+            console.error('未找到strengthsList元素');
+        }
+
+        // 渲染待改进项
+        const improvementsList = document.getElementById('improvementsList');
+        console.log('找到improvementsList元素:', improvementsList);
+        
+        if (improvementsList) {
+            if (feedback.improvements && feedback.improvements.length > 0) {
+                console.log('渲染待改进项:', feedback.improvements.length, '条');
+                improvementsList.innerHTML = feedback.improvements.map(item => `<li>${item}</li>`).join('');
+            } else {
+                console.log('没有待改进项数据');
+                improvementsList.innerHTML = '<li>暂无数据</li>';
+            }
+        } else {
+            console.error('未找到improvementsList元素');
+        }
+
+        // 显示缓存信息
+        if (feedback.cached && feedback.generated_at) {
+            const feedbackInfo = document.getElementById('feedbackInfo');
+            const generatedTime = document.getElementById('generatedTime');
+            if (feedbackInfo && generatedTime) {
+                generatedTime.textContent = new Date(feedback.generated_at).toLocaleString('zh-CN');
+                feedbackInfo.style.display = 'block';
+            }
+        }
+    }
+
+    extractScoresFromCandidate() {
+        // 从候选人数据中提取评分
+        if (this.candidateData.knowledge_score !== null && this.candidateData.knowledge_score !== undefined) {
+            this.evaluationData.knowledge = this.candidateData.knowledge_score;
+        }
+        if (this.candidateData.skill_score !== null && this.candidateData.skill_score !== undefined) {
+            this.evaluationData.skill = this.candidateData.skill_score;
+        }
+        if (this.candidateData.ability_score !== null && this.candidateData.ability_score !== undefined) {
+            this.evaluationData.ability = this.candidateData.ability_score;
+        }
+        if (this.candidateData.personality_score !== null && this.candidateData.personality_score !== undefined) {
+            this.evaluationData.personality = this.candidateData.personality_score;
+        }
+        if (this.candidateData.motivation_score !== null && this.candidateData.motivation_score !== undefined) {
+            this.evaluationData.motivation = this.candidateData.motivation_score;
+        }
+        if (this.candidateData.value_score !== null && this.candidateData.value_score !== undefined) {
+            this.evaluationData.value = this.candidateData.value_score;
+        }
+    }
+
+    async loadEvaluationFromAPI() {
+        try {
+            const response = await fetch(`http://localhost:8000/api/candidates/${this.candidateId}/evaluation`);
+            
+            if (response.ok) {
+                const evaluation = await response.json();
+                console.log('从API加载的评分数据:', evaluation);
+                
+                // 更新评分数据
+                if (evaluation.knowledge) this.evaluationData.knowledge = evaluation.knowledge;
+                if (evaluation.skill) this.evaluationData.skill = evaluation.skill;
+                if (evaluation.ability) this.evaluationData.ability = evaluation.ability;
+                if (evaluation.personality) this.evaluationData.personality = evaluation.personality;
+                if (evaluation.motivation) this.evaluationData.motivation = evaluation.motivation;
+                if (evaluation.value) this.evaluationData.value = evaluation.value;
+                
+                // 重新渲染评分
+                this.renderEvaluation();
+            } else {
+                console.log('该候选人暂无详细评分数据，使用基础数据');
+            }
+        } catch (error) {
+            console.error('加载评分数据失败:', error);
         }
     }
 
@@ -67,6 +236,10 @@ class CandidateDetail {
             if (response.ok) {
                 const data = await response.json();
                 console.log('面试记录数据:', data);
+                
+                // 从面试记录中计算评分
+                this.calculateScoresFromInterviews(data);
+                
                 this.renderInterviewRecords(data);
             } else {
                 console.log('该候选人暂无面试记录，状态码:', response.status);
@@ -75,6 +248,69 @@ class CandidateDetail {
         } catch (error) {
             console.error('加载面试记录失败:', error);
             this.renderNoInterviewRecords();
+        }
+    }
+
+    calculateScoresFromInterviews(interviewData) {
+        console.log('开始计算面试评分');
+        
+        if (!interviewData.sessions || interviewData.sessions.length === 0) {
+            console.log('没有面试会话数据');
+            return;
+        }
+
+        // 维度映射
+        const dimensionMap = {
+            'Knowledge': 'knowledge',
+            'Skill': 'skill',
+            'Ability': 'ability',
+            'Personality': 'personality',
+            'Motivation': 'motivation',
+            'Value': 'value'
+        };
+
+        // 收集所有维度的分数
+        const allDimensionScores = {
+            knowledge: [],
+            skill: [],
+            ability: [],
+            personality: [],
+            motivation: [],
+            value: []
+        };
+
+        // 遍历所有会话，收集分数
+        interviewData.sessions.forEach(session => {
+            if (session.qa_pairs && session.qa_pairs.length > 0) {
+                session.qa_pairs.forEach(qa => {
+                    const dimensionKey = dimensionMap[qa.dimension];
+                    if (dimensionKey && qa.score !== null && qa.score !== undefined) {
+                        allDimensionScores[dimensionKey].push(qa.score);
+                    }
+                });
+            }
+        });
+
+        // 计算每个维度的平均分
+        let hasScores = false;
+        Object.keys(allDimensionScores).forEach(dimension => {
+            const scores = allDimensionScores[dimension];
+            if (scores.length > 0) {
+                // 计算平均分
+                const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+                this.evaluationData[dimension] = Math.round(avgScore);
+                hasScores = true;
+                console.log(`${dimension}: ${scores.join(', ')} → 平均: ${avgScore.toFixed(1)}`);
+            } else {
+                // 没有分数的维度保持为null
+                console.log(`${dimension}: 无评分数据`);
+            }
+        });
+
+        // 如果有新的评分数据，重新渲染
+        if (hasScores) {
+            console.log('更新评分显示');
+            this.renderEvaluation();
         }
     }
 
@@ -182,6 +418,9 @@ class CandidateDetail {
         
         // 加载面试对话记录
         await this.loadInterviewRecords();
+        
+        // 加载AI生成的反馈
+        await this.loadAIFeedback();
     }
 
     renderCandidateInfo() {
@@ -201,17 +440,110 @@ class CandidateDetail {
         // 渲染评分
         const dimensions = ['knowledge', 'skill', 'ability', 'personality', 'motivation', 'value'];
         
+        let allScores = [];
+        
         dimensions.forEach(dimension => {
             const score = this.evaluationData[dimension];
-            document.getElementById(`${dimension}Score`).textContent = `${score} 分`;
-            document.getElementById(`${dimension}Progress`).style.width = `${score}%`;
+            const scoreElement = document.getElementById(`${dimension}Score`);
+            const progressElement = document.getElementById(`${dimension}Progress`);
+            
+            if (score !== null && score !== undefined && !isNaN(score) && score > 0) {
+                // 有有效分数
+                scoreElement.textContent = `${Math.round(score)} 分`;
+                progressElement.style.width = `${score}%`;
+                allScores.push(score);
+            } else {
+                // 没有分数，算0分
+                scoreElement.textContent = '0 分';
+                scoreElement.style.color = '#999';
+                progressElement.style.width = '0%';
+                allScores.push(0);
+            }
         });
 
-        // 计算总分
+        // 计算总分（所有6个维度的平均分，包括0分）
         const totalScore = Math.round(
-            Object.values(this.evaluationData).reduce((sum, score) => sum + score, 0) / 6
+            allScores.reduce((sum, score) => sum + score, 0) / 6
         );
-        document.getElementById('totalScore').textContent = `${totalScore} 分`;
+        
+        const totalScoreElement = document.getElementById('totalScore');
+        totalScoreElement.textContent = `${totalScore} 分`;
+
+        // 更新评估摘要
+        this.updateEvaluationSummary(totalScore, allScores);
+    }
+
+    updateEvaluationSummary(totalScore, allScores) {
+        const summaryElement = document.getElementById('evaluationSummary');
+        
+        // 检查是否所有分数都是0
+        const hasAnyScore = allScores.some(score => score > 0);
+        
+        if (!hasAnyScore) {
+            summaryElement.textContent = '该候选人尚未完成AI面试评估。';
+            return;
+        }
+
+        let summary = '';
+        const dimensionNames = {
+            knowledge: '专业知识',
+            skill: '专业技能',
+            ability: '综合能力',
+            personality: '个性特质',
+            motivation: '求职动机',
+            value: '价值观'
+        };
+
+        // 找出得分最高和最低的维度（排除0分）
+        let highestDim = null;
+        let lowestDim = null;
+        let highestScore = -1;
+        let lowestScore = 101;
+
+        Object.keys(this.evaluationData).forEach(dim => {
+            const score = this.evaluationData[dim];
+            if (score !== null && score !== undefined && !isNaN(score) && score > 0) {
+                if (score > highestScore) {
+                    highestScore = score;
+                    highestDim = dim;
+                }
+                if (score < lowestScore) {
+                    lowestScore = score;
+                    lowestDim = dim;
+                }
+            }
+        });
+
+        // 统计未回答的维度数量
+        const unansweredCount = allScores.filter(score => score === 0).length;
+
+        // 根据总分生成评价
+        if (totalScore >= 80) {
+            summary = `候选人表现优秀，综合得分${totalScore}分。`;
+        } else if (totalScore >= 70) {
+            summary = `候选人表现良好，综合得分${totalScore}分。`;
+        } else if (totalScore >= 60) {
+            summary = `候选人表现中等，综合得分${totalScore}分。`;
+        } else if (totalScore >= 40) {
+            summary = `候选人表现一般，综合得分${totalScore}分。`;
+        } else {
+            summary = `候选人表现有待提升，综合得分${totalScore}分。`;
+        }
+
+        // 添加优势和改进建议
+        if (highestDim) {
+            summary += `在${dimensionNames[highestDim]}方面表现突出（${highestScore}分）`;
+        }
+        
+        if (unansweredCount > 0) {
+            summary += `，但有${unansweredCount}个维度未回答（计0分）`;
+        } else if (lowestDim && lowestScore < 60) {
+            summary += `，${dimensionNames[lowestDim]}方面需要加强（${lowestScore}分）`;
+        }
+        
+        summary += '。';
+
+        summaryElement.textContent = summary;
     }
 
     getStatusClass(status) {
@@ -234,6 +566,22 @@ class CandidateDetail {
         window.scheduleInterview = () => this.scheduleInterview();
         window.approveCandidate = () => this.approveCandidate();
         window.rejectCandidate = () => this.rejectCandidate();
+        window.regenerateFeedback = () => this.regenerateFeedback();
+    }
+
+    async regenerateFeedback() {
+        if (!confirm('确定要重新生成AI反馈吗？这将覆盖现有内容。')) {
+            return;
+        }
+
+        // 显示加载状态
+        const strengthsList = document.getElementById('strengthsList');
+        const improvementsList = document.getElementById('improvementsList');
+        if (strengthsList) strengthsList.innerHTML = '<li class="loading-item">正在重新生成...</li>';
+        if (improvementsList) improvementsList.innerHTML = '<li class="loading-item">正在重新生成...</li>';
+
+        // 重新加载（强制生成）
+        await this.loadAIFeedback(true);
     }
 
     goBack() {

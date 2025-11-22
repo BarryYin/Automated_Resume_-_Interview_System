@@ -646,3 +646,116 @@ body {
     40% { content: '..'; }
     60%, 100% { content: '...'; }
 }
+
+
+/* 评分计算说明 */
+.score-calculation-note {
+    padding: 10px 15px;
+    background: #e3f2fd;
+    border-left: 3px solid #2196f3;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.score-calculation-note small {
+    color: #1565c0;
+    font-size: 13px;
+    display: block;
+}
+
+
+/* 0分维度的样式 */
+.dimension-score[style*="color: rgb(153, 153, 153)"],
+.dimension-score[style*="color:#999"] {
+    opacity: 0.6;
+}
+
+
+/* AI生成标识 */
+.ai-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 11px;
+    border-radius: 10px;
+    margin-left: 8px;
+    font-weight: 500;
+    vertical-align: middle;
+}
+
+/* 加载中的列表项 */
+.loading-item {
+    color: #999;
+    font-style: italic;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+
+/* 反馈区域样式 */
+.feedback-section {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    margin-top: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.feedback-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.feedback-header h2 {
+    font-size: 22px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.regenerate-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.regenerate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.regenerate-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.feedback-info {
+    margin-top: 15px;
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.feedback-info small {
+    color: #666;
+    font-size: 13px;
+}

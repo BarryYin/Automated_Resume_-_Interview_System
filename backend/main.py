@@ -198,6 +198,18 @@ def init_db():
         )
     ''')
     
+    # AI反馈表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS candidate_ai_feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            candidate_id INTEGER NOT NULL,
+            strengths TEXT,
+            improvements TEXT,
+            generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (candidate_id) REFERENCES candidates (id)
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -1388,6 +1400,281 @@ def get_candidate_name_by_session(session_id):
         return None
     finally:
         conn.close()
+
+@app.get("/api/candidates/{candidate_id}/ai-feedback")
+async def generate_candidate_feedback(candidate_id: int, regenerate: bool = False):
+    """使用AI生成候选人的优势亮点和待改进项（带缓存）"""
+    conn = sqlite3.connect('recruitment.db')
+    cursor = conn.cursor()
+    
+    try:
+        # 首先检查是否已有缓存的反馈
+        if not regenerate:
+            cursor.execute('''
+                SELECT strengths, improvements, generated_at
+                FROM candidate_ai_feedback
+                WHERE candidate_id = ?
+                ORDER BY generated_at DESC
+                LIMIT 1
+            ''', (candidate_id,))
+            
+            cached = cursor.fetchone()
+            if cached:
+                print(f"使用缓存的AI反馈，生成时间: {cached[2]}")
+                return {
+                    "strengths": json.loads(cached[0]) if cached[0] else [],
+                    "improvements": json.loads(cached[1]) if cached[1] else [],
+                    "cached": True,
+                    "generated_at": cached[2]
+                }
+        
+        print(f"生成新的AI反馈，候选人ID: {candidate_id}")
+        # 获取候选人信息
+        candidates = excel_loader.load_candidates()
+        candidate_data = next((c for c in candidates if c.get('id') == candidate_id), None)
+        
+        if not candidate_data:
+            raise HTTPException(status_code=404, detail="候选人未找到")
+        
+        candidate_name = candidate_data.get('name')
+        candidate_email = candidate_data.get('email')
+        position = candidate_data.get('position', '未知职位')
+        
+        # 获取面试记录
+        cursor.execute('''
+            SELECT session_id, questions_json, strategy, created_at
+            FROM interview_session_questions
+            WHERE candidate_name = ? OR candidate_email = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+        ''', (candidate_name, candidate_email))
+        
+        session = cursor.fetchone()
+        
+        if not session:
+            return {
+                "strengths": ["候选人尚未完成面试"],
+                "improvements": ["建议完成AI面试以获得详细评估"]
+            }
+        
+        session_id = session[0]
+        
+        # 获取问答记录
+        cursor.execute('''
+            SELECT question_text, answer_text, dimension, score, feedback
+            FROM interview_answers
+            WHERE session_id = ?
+            ORDER BY question_id
+        ''', (session_id,))
+        
+        answers = cursor.fetchall()
+        
+        if not answers:
+            return {
+                "strengths": ["候选人尚未回答面试问题"],
+                "improvements": ["建议完成面试问答以获得详细评估"]
+            }
+        
+        # 构建AI提示
+        qa_summary = ""
+        dimension_scores = {}
+        
+        for answer in answers:
+            q_text, a_text, dimension, score, feedback = answer
+            qa_summary += f"\n维度：{dimension}\n问题：{q_text}\n回答：{a_text}\n评分：{score}分\n评价：{feedback}\n"
+            
+            if dimension not in dimension_scores:
+                dimension_scores[dimension] = []
+            dimension_scores[dimension].append(score)
+        
+        # 计算各维度平均分
+        avg_scores = {dim: sum(scores)/len(scores) for dim, scores in dimension_scores.items()}
+        
+        prompt = f"""
+请作为专业的HR评估专家，基于候选人的面试表现，生成优势亮点和待改进项。
+
+候选人信息：
+- 姓名：{candidate_name}
+- 应聘职位：{position}
+
+面试表现：
+{qa_summary}
+
+各维度平均分：
+{chr(10).join([f'- {dim}: {score:.1f}分' for dim, score in avg_scores.items()])}
+
+请生成：
+1. 优势亮点（3-5条）：具体、客观、有说服力
+2. 待改进项（2-4条）：建设性、可操作
+
+要求：
+- 基于实际回答内容和评分
+- 语言简洁专业
+- 突出关键点
+- 避免空泛表述
+
+请按以下JSON格式返回：
+{{
+    "strengths": ["优势1", "优势2", "优势3"],
+    "improvements": ["改进建议1", "改进建议2"]
+}}
+"""
+        
+        try:
+            response = llm_service.client.chat.completions.create(
+                model="qwen-max",
+                messages=[
+                    {"role": "system", "content": "你是一位专业的HR评估专家，擅长分析候选人表现并提供建设性反馈。"},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=800
+            )
+            
+            content = response.choices[0].message.content
+            
+            # 解析JSON响应
+            import re
+            json_match = re.search(r'\{.*\}', content, re.DOTALL)
+            if json_match:
+                result = json.loads(json_match.group())
+            else:
+                # 如果没有找到JSON，尝试解析文本
+                result = parse_feedback_text(content)
+            
+            # 保存到数据库
+            save_ai_feedback(cursor, candidate_id, result)
+            conn.commit()
+            
+            return {
+                **result,
+                "cached": False,
+                "generated_at": datetime.now().isoformat()
+            }
+                
+        except Exception as e:
+            print(f"AI生成反馈失败: {e}")
+            # 返回基于评分的基础反馈
+            result = generate_basic_feedback(avg_scores, position)
+            
+            # 也保存基础反馈
+            save_ai_feedback(cursor, candidate_id, result)
+            conn.commit()
+            
+            return {
+                **result,
+                "cached": False,
+                "generated_at": datetime.now().isoformat()
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"生成候选人反馈失败: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"生成反馈失败: {str(e)}")
+    finally:
+        conn.close()
+
+def save_ai_feedback(cursor, candidate_id, feedback):
+    """保存AI反馈到数据库"""
+    try:
+        # 创建表（如果不存在）
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS candidate_ai_feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                candidate_id INTEGER NOT NULL,
+                strengths TEXT,
+                improvements TEXT,
+                generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (candidate_id) REFERENCES candidates (id)
+            )
+        ''')
+        
+        # 插入反馈
+        cursor.execute('''
+            INSERT INTO candidate_ai_feedback (candidate_id, strengths, improvements)
+            VALUES (?, ?, ?)
+        ''', (
+            candidate_id,
+            json.dumps(feedback.get('strengths', []), ensure_ascii=False),
+            json.dumps(feedback.get('improvements', []), ensure_ascii=False)
+        ))
+        
+        print(f"AI反馈已保存到数据库，候选人ID: {candidate_id}")
+        
+    except Exception as e:
+        print(f"保存AI反馈失败: {e}")
+
+def parse_feedback_text(content):
+    """解析文本格式的反馈"""
+    strengths = []
+    improvements = []
+    
+    lines = content.split('\n')
+    current_section = None
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        
+        if '优势' in line or 'strengths' in line.lower():
+            current_section = 'strengths'
+        elif '改进' in line or 'improvements' in line.lower():
+            current_section = 'improvements'
+        elif line.startswith(('-', '•', '*', '1.', '2.', '3.', '4.', '5.')):
+            # 移除列表标记
+            item = re.sub(r'^[-•*\d.]\s*', '', line)
+            if current_section == 'strengths':
+                strengths.append(item)
+            elif current_section == 'improvements':
+                improvements.append(item)
+    
+    return {
+        "strengths": strengths[:5] if strengths else ["表达清晰，态度积极"],
+        "improvements": improvements[:4] if improvements else ["可以更加深入地展开回答"]
+    }
+
+def generate_basic_feedback(avg_scores, position):
+    """生成基础反馈（当AI调用失败时）"""
+    strengths = []
+    improvements = []
+    
+    # 根据评分生成反馈
+    for dimension, score in avg_scores.items():
+        if score >= 70:
+            dim_name = {
+                'Knowledge': '专业知识扎实',
+                'Skill': '实操技能优秀',
+                'Ability': '综合能力突出',
+                'Personality': '性格特质良好',
+                'Motivation': '求职动机明确',
+                'Value': '价值观契合'
+            }.get(dimension, f'{dimension}表现良好')
+            strengths.append(dim_name)
+        elif score < 50:
+            dim_name = {
+                'Knowledge': '专业知识需要加强',
+                'Skill': '实操技能有待提升',
+                'Ability': '综合能力需要培养',
+                'Personality': '可以更好地展现个人特质',
+                'Motivation': '建议更明确职业目标',
+                'Value': '需要更深入了解企业文化'
+            }.get(dimension, f'{dimension}需要改进')
+            improvements.append(dim_name)
+    
+    if not strengths:
+        strengths = [f"对{position}职位有一定了解", "态度积极，愿意学习"]
+    
+    if not improvements:
+        improvements = ["可以更加深入地展开回答", "建议增加具体案例说明"]
+    
+    return {
+        "strengths": strengths[:5],
+        "improvements": improvements[:4]
+    }
 
 @app.get("/api/candidates/{candidate_id}/interview-records")
 async def get_candidate_interview_records(candidate_id: int):

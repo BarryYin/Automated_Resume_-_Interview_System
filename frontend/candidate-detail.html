@@ -48,6 +48,10 @@
                 <div class="total-score" id="totalScore">85 分</div>
             </div>
             
+            <div class="score-calculation-note">
+                <small>💡 评分说明：同一维度多个问题取平均分，未回答的维度计0分，总分为6个维度的平均分</small>
+            </div>
+            
             <div class="evaluation-summary" id="evaluationSummary">
                 候选人展现了扎实的专业知识和优秀的实操技能，综合素质优秀，性格积极主动，求职动机明确，价值观与企业文化高度契合。
             </div>
@@ -135,24 +139,37 @@
         </div>
 
         <!-- 优势亮点和待改进项 -->
-        <div class="feedback-grid">
-            <div class="feedback-card strengths">
-                <h3>优势亮点</h3>
-                <ul id="strengthsList">
-                    <li>专业知识扎实，具备相关技术资格认证</li>
-                    <li>实操能力强，有丰富的项目实战经验</li>
-                    <li>综合素质优秀，问题解决能力突出</li>
-                </ul>
-                <button class="edit-feedback-btn" onclick="editFeedback('strengths')">编辑</button>
+        <div class="feedback-section">
+            <div class="feedback-header">
+                <h2>AI评估反馈</h2>
+                <button class="regenerate-btn" onclick="regenerateFeedback()" title="重新生成AI反馈">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                    </svg>
+                    重新生成
+                </button>
             </div>
+            
+            <div class="feedback-grid">
+                <div class="feedback-card strengths">
+                    <h3>优势亮点 <span class="ai-badge">AI生成</span></h3>
+                    <ul id="strengthsList">
+                        <li class="loading-item">正在加载AI反馈...</li>
+                    </ul>
+                    <button class="edit-feedback-btn" onclick="editFeedback('strengths')">编辑</button>
+                </div>
 
-            <div class="feedback-card improvements">
-                <h3>待改进项</h3>
-                <ul id="improvementsList">
-                    <li>可以进一步拓展跨领域知识</li>
-                    <li>在某些新技术领域经验相对较少</li>
-                </ul>
-                <button class="edit-feedback-btn" onclick="editFeedback('improvements')">编辑</button>
+                <div class="feedback-card improvements">
+                    <h3>待改进项 <span class="ai-badge">AI生成</span></h3>
+                    <ul id="improvementsList">
+                        <li class="loading-item">正在加载AI反馈...</li>
+                    </ul>
+                    <button class="edit-feedback-btn" onclick="editFeedback('improvements')">编辑</button>
+                </div>
+            </div>
+            
+            <div class="feedback-info" id="feedbackInfo" style="display: none;">
+                <small>💾 使用缓存的反馈 | 生成时间: <span id="generatedTime"></span></small>
             </div>
         </div>
 
@@ -181,12 +198,21 @@
     </script>
     <link rel="stylesheet" href="css/pdf-viewer.css">
     <script src="js/pdf-viewer.js"></script>
-    <script src="js/candidate-detail.js?v=3"></script>
+    <script src="js/candidate-detail.js?v=12"></script>
     <script>
         // 调试脚本
         console.log('候选人详情页面加载完成');
         console.log('当前URL:', window.location.href);
         console.log('URL参数:', new URLSearchParams(window.location.search).get('id'));
+        
+        // 添加调试函数
+        window.debugScores = function() {
+            if (window.candidateDetailInstance) {
+                console.log('当前评分数据:', window.candidateDetailInstance.evaluationData);
+            } else {
+                console.log('CandidateDetail实例未找到');
+            }
+        };
     </script>
 </body>
 </html>

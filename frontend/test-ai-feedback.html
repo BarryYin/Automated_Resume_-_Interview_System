@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试AI反馈</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            padding: 8px;
+            margin: 5px 0;
+            background: #f5f5f5;
+            border-left: 3px solid #007bff;
+        }
+        .improvements li {
+            border-left-color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI反馈测试</h1>
+    
+    <div class="section">
+        <label>候选人ID: </label>
+        <input type="number" id="candidateId" value="2001" style="padding: 5px; width: 100px;">
+        <button onclick="loadFeedback()">加载AI反馈</button>
+    </div>
+    
+    <div class="section">
+        <h2>优势亮点</h2>
+        <ul id="strengthsList">
+            <li>点击按钮加载...</li>
+        </ul>
+    </div>
+    
+    <div class="section improvements">
+        <h2>待改进项</h2>
+        <ul id="improvementsList">
+            <li>点击按钮加载...</li>
+        </ul>
+    </div>
+
+    <script>
+        async function loadFeedback() {
+            const candidateId = document.getElementById('candidateId').value;
+            const strengthsList = document.getElementById('strengthsList');
+            const improvementsList = document.getElementById('improvementsList');
+            
+            strengthsList.innerHTML = '<li>加载中...</li>';
+            improvementsList.innerHTML = '<li>加载中...</li>';
+            
+            try {
+                const url = `http://localhost:8000/api/candidates/${candidateId}/ai-feedback`;
+                console.log('请求URL:', url);
+                
+                const response = await fetch(url);
+                console.log('响应状态:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('反馈数据:', data);
+                
+                // 渲染优势亮点
+                if (data.strengths && data.strengths.length > 0) {
+                    strengthsList.innerHTML = data.strengths.map(item => `<li>${item}</li>`).join('');
+                } else {
+                    strengthsList.innerHTML = '<li>无数据</li>';
+                }
+                
+                // 渲染待改进项
+                if (data.improvements && data.improvements.length > 0) {
+                    improvementsList.innerHTML = data.improvements.map(item => `<li>${item}</li>`).join('');
+                } else {
+                    improvementsList.innerHTML = '<li>无数据</li>';
+                }
+                
+            } catch (error) {
+                console.error('错误:', error);
+                strengthsList.innerHTML = `<li style="color: red;">加载失败: ${error.message}</li>`;
+                improvementsList.innerHTML = `<li style="color: red;">加载失败: ${error.message}</li>`;
+            }
+        }
+        
+        // 页面加载时自动测试
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('测试页面加载完成');
+        });
+    </script>
+</body>
+</html>
