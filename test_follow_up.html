@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试追问功能</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 16px;
+        }
+        .flow {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+        .flow.good {
+            border-left-color: #28a745;
+        }
+        .flow.bad {
+            border-left-color: #dc3545;
+        }
+        .code {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <h1>追问功能测试说明</h1>
+    
+    <div class="section">
+        <h2>功能概述</h2>
+        <p>智能追问机制已实现，根据AI评分自动决定是否追问：</p>
+        <ul>
+            <li><strong>评分 ≥ 70分</strong>：回答质量好，不追问，直接下一题</li>
+            <li><strong>评分 < 70分</strong>：回答质量不够，显示追问并等待回答</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>追问流程</h2>
+        
+        <div class="flow good">
+            <strong>场景1：回答质量好（评分 ≥ 70）</strong>
+            <div class="code">
+问题1: 请介绍一下您的Python开发经验
+  ↓
+候选人回答: "我有5年Python开发经验，熟练使用Django、Flask等框架..."
+  ↓
+AI评分: 85分 ✓
+  ↓
+感谢您的回答！
+  ↓
+<span class="highlight">不追问，直接进入问题2</span>
+            </div>
+        </div>
+        
+        <div class="flow bad">
+            <strong>场景2：回答质量不够（评分 < 70）</strong>
+            <div class="code">
+问题1: 请介绍一下您的Python开发经验
+  ↓
+候选人回答: "我会Python"
+  ↓
+AI评分: 45分 ✗
+  ↓
+感谢您的回答！
+  ↓
+<span class="highlight">追问: 您最熟悉哪些Python框架？</span>
+  ↓
+<span class="highlight">等待候选人回答追问</span>
+  ↓
+候选人回答追问: "我熟悉Django和Flask..."
+  ↓
+AI评分追问回答: 75分
+  ↓
+感谢您的回答！
+  ↓
+进入问题2
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>关键改动</h2>
+        <table>
+            <tr>
+                <th>改动项</th>
+                <th>修改前</th>
+                <th>修改后</th>
+                <th>状态</th>
+            </tr>
+            <tr>
+                <td>追问判断</td>
+                <td>随机概率（70%）</td>
+                <td>根据评分（< 70分）</td>
+                <td><span class="status success">✓ 已修改</span></td>
+            </tr>
+            <tr>
+                <td>追问行为</td>
+                <td>只显示，不等待</td>
+                <td>显示并等待回答</td>
+                <td><span class="status success">✓ 已修改</span></td>
+            </tr>
+            <tr>
+                <td>追问回答</td>
+                <td>不收集</td>
+                <td>收集并评分</td>
+                <td><span class="status success">✓ 已修改</span></td>
+            </tr>
+            <tr>
+                <td>状态管理</td>
+                <td>无</td>
+                <td>isFollowUpQuestion标记</td>
+                <td><span class="status success">✓ 已添加</span></td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="section">
+        <h2>代码改动</h2>
+        
+        <h3>1. 添加状态变量</h3>
+        <div class="code">
+constructor() {
+    // ... 现有代码
+    this.isFollowUpQuestion = false;  // 是否为追问状态
+    this.lastEvaluation = null;       // 保存上一次的评分
+}
+        </div>
+        
+        <h3>2. submitAnswer返回评分</h3>
+        <div class="code">
+async submitAnswer(answerData) {
+    // ... 提交逻辑
+    const evaluation = result.evaluation;
+    
+    // 保存评分
+    this.evaluations.push({
+        question: answerData.question,
+        dimension: answerData.dimension,
+        score: evaluation.score,
+        feedback: evaluation.feedback,
+        isFollowUp: answerData.isFollowUp || false  // 标记是否为追问
+    });
+    
+    // <span class="highlight">返回评分供追问判断使用</span>
+    return evaluation;
+}
+        </div>
+        
+        <h3>3. sendMessage实现智能追问</h3>
+        <div class="code">
+async sendMessage() {
+    // ... 收集回答
+    
+    // 提交回答并获取评分
+    const evaluation = await this.submitAnswer(answerData);
+    
+    // <span class="highlight">如果是追问的回答，直接进入下一题</span>
+    if (this.isFollowUpQuestion) {
+        this.isFollowUpQuestion = false;
+        this.currentQuestion++;
+        this.askNextQuestion();
+        return;
+    }
+    
+    // <span class="highlight">判断是否需要追问</span>
+    if (this.currentQuestionData?.follow_up && evaluation) {
+        const needFollowUp = evaluation.score < 70;
+        
+        if (needFollowUp) {
+            // <span class="highlight">显示追问并等待回答</span>
+            this.addMessage('ai', `追问：${this.currentQuestionData.follow_up}`);
+            this.isWaitingForResponse = true;
+            this.isFollowUpQuestion = true;
+            return;  // 不进入下一题
+        }
+    }
+    
+    // 继续下一个问题
+    this.currentQuestion++;
+    this.askNextQuestion();
+}
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>测试方法</h2>
+        
+        <h3>方法1: 实际面试测试</h3>
+        <ol>
+            <li>打开候选人登录页面</li>
+            <li>输入候选人信息开始面试</li>
+            <li><strong>故意回答得很简短</strong>（如"会"、"懂"、"可以"）</li>
+            <li>观察是否出现追问</li>
+            <li>回答追问</li>
+            <li>观察是否进入下一个问题</li>
+        </ol>
+        
+        <h3>方法2: 查看控制台日志</h3>
+        <p>打开浏览器控制台（F12），会看到：</p>
+        <div class="code">
+评分: 45, 是否需要追问: true
+显示追问，等待用户回答
+追问回答完成，进入下一个问题
+        </div>
+        
+        <h3>方法3: 对比测试</h3>
+        <table>
+            <tr>
+                <th>回答类型</th>
+                <th>示例回答</th>
+                <th>预期评分</th>
+                <th>预期行为</th>
+            </tr>
+            <tr>
+                <td>简短回答</td>
+                <td>"会"、"懂"、"可以"</td>
+                <td>< 70分</td>
+                <td><span class="status warning">触发追问</span></td>
+            </tr>
+            <tr>
+                <td>详细回答</td>
+                <td>100字以上，有具体案例</td>
+                <td>≥ 70分</td>
+                <td><span class="status success">不追问</span></td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="section">
+        <h2>追问策略说明</h2>
+        
+        <h3>当前策略：评分阈值</h3>
+        <p><code>const needFollowUp = evaluation.score < 70;</code></p>
+        
+        <h3>可选策略（已在代码中注释）</h3>
+        <ul>
+            <li><strong>回答长度</strong>：<code>message.length < 100</code></li>
+            <li><strong>重要维度</strong>：只对Knowledge、Skill、Ability追问</li>
+            <li><strong>组合策略</strong>：评分低且回答短</li>
+        </ul>
+        
+        <h3>修改追问策略</h3>
+        <p>在 <code>frontend/js/interview.js</code> 的 <code>sendMessage()</code> 方法中修改：</p>
+        <div class="code">
+// 当前策略：评分低于70分
+const needFollowUp = evaluation.score < 70;
+
+// 可改为其他策略，例如：
+// const needFollowUp = evaluation.score < 70 && message.length < 100;
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>注意事项</h2>
+        <ul>
+            <li>✅ 追问会增加面试时间（最多20个问题）</li>
+            <li>✅ 追问的回答也会被AI评分</li>
+            <li>✅ 追问标记为 <code>isFollowUp: true</code></li>
+            <li>✅ 进度条只计算主问题（10个），不计算追问</li>
+            <li>⚠️ 如果所有问题都触发追问，面试时间会翻倍</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>快速测试</h2>
+        <p>想要快速测试追问功能？</p>
+        <ol>
+            <li>登录面试系统</li>
+            <li>第一个问题<strong>故意回答"会"</strong></li>
+            <li>应该会看到追问</li>
+            <li>回答追问后进入第二个问题</li>
+            <li>第二个问题<strong>详细回答</strong>（100字以上）</li>
+            <li>应该不会追问，直接进入第三个问题</li>
+        </ol>
+    </div>
+</body>
+</html>

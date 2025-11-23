@@ -9,6 +9,8 @@ class InterviewSession {
         this.questions = [];
         this.currentQuestionData = null;
         this.evaluations = [];
+        this.isFollowUpQuestion = false;  // 是否为追问状态
+        this.lastEvaluation = null;       // 保存上一次的评分
         
         this.init();
     }
@@ -136,32 +138,49 @@ class InterviewSession {
                     if (questionsResponse.ok) {
                         const questionsData = await questionsResponse.json();
                         if (questionsData.has_questions && questionsData.questions.length > 0) {
-                            console.log('使用数据库中保存的面试问题');
+                            console.log('✓ 使用数据库中保存的面试问题');
+                            console.log('问题数量:', questionsData.questions.length);
+                            console.log('问题策略:', questionsData.strategy);
+                            
+                            // 直接使用预生成的问题
                             this.questions = questionsData.questions;
                             this.totalQuestions = this.questions.length;
                             
-                            // 创建一个新的面试会话
-                            const requestData = {
-                                name: session.candidateName,
-                                email: session.candidateEmail,
-                                invitation_code: session.invitationCode || '1001'
-                            };
-                            
-                            const sessionResponse = await fetch('http://localhost:8000/api/interview/generate-questions', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify(requestData)
-                            });
-                            
-                            if (sessionResponse.ok) {
-                                const sessionData = await sessionResponse.json();
-                                this.sessionId = sessionData.session_id;
+                            // 创建面试会话记录（用于保存回答）
+                            // 即使使用预生成的问题，也需要创建会话来保存回答
+                            try {
+                                const sessionResponse = await fetch('http://localhost:8000/api/interview/start', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        name: session.candidateName,
+                                        email: session.candidateEmail,
+                                        invitation_code: session.invitationCode || '1001'
+                                    })
+                                });
+                                
+                                if (sessionResponse.ok) {
+                                    const sessionData = await sessionResponse.json();
+                                    this.sessionId = sessionData.session_id;
+                                    
+                                    // 保存到localStorage
+                                    session.llmSessionId = this.sessionId;
+                                    localStorage.setItem('interviewSession', JSON.stringify(session));
+                                    
+                                    console.log('✓ 创建面试会话成功:', this.sessionId);
+                                } else {
+                                    console.error('创建面试会话失败');
+                                    // 使用登录时的session_id作为备用
+                                    this.sessionId = session.sessionId;
+                                }
+                            } catch (error) {
+                                console.error('创建面试会话失败:', error);
+                                this.sessionId = session.sessionId;
                             }
                             
                             // 更新会话信息
-                            session.llmSessionId = this.sessionId;
                             if (!session.candidatePosition) {
                                 const positionMapping = {
                                     "田忠": "Python工程师服务器端开发",
@@ -172,10 +191,12 @@ class InterviewSession {
                                     "龙小天": "金融海外投资新媒体内容文案编辑运营"
                                 };
                                 session.candidatePosition = positionMapping[session.candidateName] || '未指定岗位';
+                                localStorage.setItem('interviewSession', JSON.stringify(session));
                             }
-                            localStorage.setItem('interviewSession', JSON.stringify(session));
                             
                             this.addMessage('ai', '太好了！我已经为您准备了个性化的面试问题。让我们开始吧！');
+                            
+                            // 重要：直接返回，不要继续执行后面的生成新问题逻辑
                             return;
                         }
                     }
@@ -366,7 +387,8 @@ class InterviewSession {
             questionText: this.currentQuestionData?.question || '',
             answer: message,
             dimension: this.currentQuestionData?.dimension || 'Knowledge',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            isFollowUp: this.isFollowUpQuestion  // 标记是否为追问的回答
         };
         
         this.messages.push(answerData);
@@ -377,8 +399,41 @@ class InterviewSession {
         this.addMessage('ai', '正在分析您的回答...');
         
         // 提交回答给LLM评估
-        await this.submitAnswer(answerData);
+        const evaluation = await this.submitAnswer(answerData);
         
+        // 如果是追问的回答，直接进入下一个问题
+        if (this.isFollowUpQuestion) {
+            console.log('追问回答完成，进入下一个问题');
+            this.isFollowUpQuestion = false;
+            this.currentQuestion++;
+            this.updateProgress();
+            
+            setTimeout(() => {
+                this.askNextQuestion();
+            }, 1500);
+            return;
+        }
+        
+        // 判断是否需要追问（智能追问）
+        if (this.currentQuestionData?.follow_up && evaluation) {
+            // 追问策略：评分低于70分时追问
+            const needFollowUp = evaluation.score < 70;
+            
+            console.log(`评分: ${evaluation.score}, 是否需要追问: ${needFollowUp}`);
+            
+            if (needFollowUp) {
+                // 显示追问，并等待回答
+                setTimeout(() => {
+                    this.addMessage('ai', `追问：${this.currentQuestionData.follow_up}`);
+                    this.isWaitingForResponse = true;  // 等待追问的回答
+                    this.isFollowUpQuestion = true;    // 标记为追问状态
+                    console.log('显示追问，等待用户回答');
+                }, 1000);
+                return;  // 不进入下一个问题，等待追问的回答
+            }
+        }
+        
+        // 如果不需要追问，继续下一个问题
         this.currentQuestion++;
         this.updateProgress();
         
@@ -437,7 +492,7 @@ class InterviewSession {
     async submitAnswer(answerData) {
         try {
             const savedSession = localStorage.getItem('interviewSession');
-            if (!savedSession) return;
+            if (!savedSession) return null;
             
             const session = JSON.parse(savedSession);
             const llmSessionId = session.llmSessionId || this.sessionId;
@@ -463,7 +518,8 @@ class InterviewSession {
                     question: answerData.question,
                     dimension: answerData.dimension,
                     score: evaluation.score,
-                    feedback: evaluation.feedback
+                    feedback: evaluation.feedback,
+                    isFollowUp: answerData.isFollowUp || false
                 });
                 
                 this.hideTypingIndicator();
@@ -471,12 +527,8 @@ class InterviewSession {
                 // 简单确认，不显示具体评分
                 this.addMessage('ai', '感谢您的回答！');
                 
-                // 如果有追问，显示追问
-                if (this.currentQuestionData?.follow_up && Math.random() > 0.3) {
-                    setTimeout(() => {
-                        this.addMessage('ai', `追问：${this.currentQuestionData.follow_up}`);
-                    }, 1000);
-                }
+                // 返回评分供追问判断使用
+                return evaluation;
                 
             } else {
                 throw new Error('提交回答失败');
@@ -486,6 +538,7 @@ class InterviewSession {
             console.error('提交回答失败:', error);
             this.hideTypingIndicator();
             this.addMessage('ai', '感谢您的回答。让我们继续下一个问题。');
+            return null;
         }
     }
     

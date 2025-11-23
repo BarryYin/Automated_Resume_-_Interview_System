@@ -379,6 +379,9 @@ async def get_candidates():
             candidate_email = candidate.get('email')
             
             # 1. 查询数据库中的面试评分（优先使用数据库数据）
+            # 需要查询两个表：interview_session_questions 和 interview_sessions
+            
+            # 先查询 interview_session_questions 表（有预生成问题的会话）
             cursor.execute('''
                 SELECT 
                     isq.session_id,
@@ -387,26 +390,89 @@ async def get_candidates():
                     MAX(ia.created_at) as last_answer_time
                 FROM interview_session_questions isq
                 LEFT JOIN interview_answers ia ON isq.session_id = ia.session_id
-                WHERE isq.candidate_name = ? OR isq.candidate_email = ?
+                WHERE isq.candidate_name = ?
                 GROUP BY isq.session_id
                 ORDER BY last_answer_time DESC
                 LIMIT 1
-            ''', (candidate_name, candidate_email))
+            ''', (candidate_name,))
             
-            db_interview = cursor.fetchone()
+            db_interview_1 = cursor.fetchone()
+            
+            # 再查询 interview_sessions 表（使用预生成问题的会话）
+            cursor.execute('''
+                SELECT 
+                    isess.session_id,
+                    COUNT(ia.id) as answer_count,
+                    AVG(ia.score) as avg_score,
+                    MAX(ia.created_at) as last_answer_time
+                FROM interview_sessions isess
+                JOIN candidates c ON isess.candidate_id = c.id
+                LEFT JOIN interview_answers ia ON isess.session_id = ia.session_id
+                WHERE c.name = ?
+                GROUP BY isess.session_id
+                ORDER BY last_answer_time DESC
+                LIMIT 1
+            ''', (candidate_name,))
+            
+            db_interview_2 = cursor.fetchone()
+            
+            # 选择最新的面试记录（有回答的）
+            db_interview = None
+            if db_interview_1 and db_interview_1[1] > 0:  # 有回答
+                if db_interview_2 and db_interview_2[1] > 0:  # 两个都有回答
+                    # 选择最新的
+                    time1 = db_interview_1[3] if db_interview_1[3] else ''
+                    time2 = db_interview_2[3] if db_interview_2[3] else ''
+                    db_interview = db_interview_1 if time1 > time2 else db_interview_2
+                else:
+                    db_interview = db_interview_1
+            elif db_interview_2 and db_interview_2[1] > 0:
+                db_interview = db_interview_2
             
             # 如果数据库中有面试会话记录，说明候选人已经面试
             if db_interview and db_interview[0]:  # 有会话记录
                 session_id, answer_count, avg_score, last_answer_time = db_interview
                 
                 # 只要有面试会话记录，就认为已完成面试
-                # 不管回答了多少个问题，只要提交了就算完成
                 if answer_count > 0:  # 有回答记录
                     candidate['status'] = '已完成'
                     candidate['score'] = int(avg_score) if avg_score else None
                     candidate['interview_date'] = last_answer_time.split()[0] if last_answer_time else candidate.get('interview_date')
                     candidate['db_interview'] = True
                     candidate['answer_count'] = answer_count
+                    
+                    # 计算各维度的实际分数（从所有会话中统计）
+                    # 需要通过session_id关联到候选人
+                    cursor.execute('''
+                        SELECT ia.dimension, AVG(ia.score) as avg_score
+                        FROM interview_answers ia
+                        WHERE ia.session_id IN (
+                            SELECT session_id FROM interview_session_questions WHERE candidate_name = ?
+                            UNION
+                            SELECT isess.session_id FROM interview_sessions isess
+                            JOIN candidates c ON isess.candidate_id = c.id
+                            WHERE c.name = ?
+                        ) AND ia.score IS NOT NULL
+                        GROUP BY ia.dimension
+                    ''', (candidate_name, candidate_name))
+                    
+                    dimension_scores = cursor.fetchall()
+                    
+                    # 维度映射
+                    dimension_map = {
+                        'Knowledge': 'knowledge_score',
+                        'Skill': 'skill_score',
+                        'Ability': 'ability_score',
+                        'Personality': 'personality_score',
+                        'Motivation': 'motivation_score',
+                        'Value': 'value_score'
+                    }
+                    
+                    # 更新各维度分数
+                    for dimension, avg_score in dimension_scores:
+                        score_key = dimension_map.get(dimension)
+                        if score_key:
+                            candidate[score_key] = round(avg_score, 1) if avg_score else None
                 else:
                     # 有会话但没有回答，保持原状态
                     candidate['db_interview'] = False
@@ -468,28 +534,69 @@ async def get_candidates():
 
 @app.post("/api/interview/start")
 async def start_interview(candidate: Candidate):
-    """开始面试"""
+    """开始面试 - 如果有预生成的问题，创建关联会话"""
     import uuid
     
-    # 先创建候选人
     conn = sqlite3.connect('recruitment.db')
     cursor = conn.cursor()
     
     try:
-        cursor.execute(
-            "INSERT OR IGNORE INTO candidates (name, email, invitation_code) VALUES (?, ?, ?)",
-            (candidate.name, candidate.email, candidate.invitation_code)
-        )
+        # 优先按姓名查找候选人（因为邮箱可能不一致）
+        cursor.execute("SELECT id FROM candidates WHERE name = ?", (candidate.name,))
+        result = cursor.fetchone()
         
-        cursor.execute("SELECT id FROM candidates WHERE email = ?", (candidate.email,))
-        candidate_id = cursor.fetchone()[0]
+        if result:
+            candidate_id = result[0]
+            print(f"找到已存在的候选人: {candidate.name}, ID: {candidate_id}")
+        else:
+            # 如果按姓名找不到，尝试按邮箱查找
+            cursor.execute("SELECT id FROM candidates WHERE email = ?", (candidate.email,))
+            result = cursor.fetchone()
+            
+            if result:
+                candidate_id = result[0]
+                print(f"按邮箱找到候选人: {candidate.email}, ID: {candidate_id}")
+            else:
+                # 都找不到，创建新候选人
+                cursor.execute(
+                    "INSERT INTO candidates (name, email, invitation_code) VALUES (?, ?, ?)",
+                    (candidate.name, candidate.email, candidate.invitation_code)
+                )
+                candidate_id = cursor.lastrowid
+                print(f"创建新候选人: {candidate.name}, ID: {candidate_id}")
         
-        # 创建面试会话
+        # 检查是否有预生成的问题
+        cursor.execute('''
+            SELECT questions_json, strategy
+            FROM interview_questions
+            WHERE candidate_name = ? OR candidate_email = ?
+            ORDER BY updated_at DESC
+            LIMIT 1
+        ''', (candidate.name, candidate.email))
+        
+        questions_result = cursor.fetchone()
+        
         session_id = str(uuid.uuid4())
-        cursor.execute(
-            "INSERT INTO interview_sessions (candidate_id, session_id) VALUES (?, ?)",
-            (candidate_id, session_id)
-        )
+        
+        if questions_result:
+            # 有预生成的问题，创建关联会话到 interview_session_questions 表
+            questions_json, strategy = questions_result
+            
+            print(f"找到预生成的问题，创建关联会话: {session_id}")
+            
+            cursor.execute('''
+                INSERT INTO interview_session_questions 
+                (session_id, candidate_name, candidate_email, questions_json, strategy, created_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ''', (session_id, candidate.name, candidate.email, questions_json, strategy))
+        else:
+            # 没有预生成的问题，创建普通会话
+            print(f"没有预生成的问题，创建普通会话: {session_id}")
+            
+            cursor.execute(
+                "INSERT INTO interview_sessions (candidate_id, session_id) VALUES (?, ?)",
+                (candidate_id, session_id)
+            )
         
         conn.commit()
         return {"session_id": session_id, "message": "面试开始"}
@@ -1638,10 +1745,24 @@ def get_candidate_name_by_session(session_id):
     cursor = conn.cursor()
     
     try:
+        # 先从interview_session_questions表查询
         cursor.execute('''
             SELECT candidate_name 
             FROM interview_session_questions 
             WHERE session_id = ?
+        ''', (session_id,))
+        
+        result = cursor.fetchone()
+        if result:
+            return result[0]
+        
+        # 如果没找到，从interview_sessions表查询
+        # 优先按姓名匹配（因为邮箱可能不一致）
+        cursor.execute('''
+            SELECT c.name
+            FROM interview_sessions isess
+            JOIN candidates c ON isess.candidate_id = c.id
+            WHERE isess.session_id = ?
         ''', (session_id,))
         
         result = cursor.fetchone()
@@ -1951,14 +2072,39 @@ async def get_candidate_interview_records(candidate_id: int):
             candidate_name, candidate_email = candidate
         
         # 查找该候选人的面试会话
+        # 1. 从interview_session_questions表查询（有预生成问题的会话）
+        # 优先按姓名匹配
         cursor.execute('''
             SELECT session_id, questions_json, strategy, created_at
             FROM interview_session_questions
-            WHERE candidate_name = ? OR candidate_email = ?
+            WHERE candidate_name = ?
             ORDER BY created_at DESC
-        ''', (candidate_name, candidate_email))
+        ''', (candidate_name,))
         
-        sessions = cursor.fetchall()
+        sessions_with_questions = cursor.fetchall()
+        
+        # 2. 从interview_sessions表查询（使用预生成问题的会话）
+        # 优先按姓名匹配
+        cursor.execute('''
+            SELECT isess.session_id, NULL as questions_json, NULL as strategy, isess.created_at
+            FROM interview_sessions isess
+            JOIN candidates c ON isess.candidate_id = c.id
+            WHERE c.name = ?
+            ORDER BY isess.created_at DESC
+        ''', (candidate_name,))
+        
+        sessions_without_questions = cursor.fetchall()
+        
+        # 合并两种会话，去重
+        all_sessions = {}
+        for session in sessions_with_questions:
+            all_sessions[session[0]] = session
+        for session in sessions_without_questions:
+            if session[0] not in all_sessions:
+                all_sessions[session[0]] = session
+        
+        sessions = list(all_sessions.values())
+        sessions.sort(key=lambda x: x[3], reverse=True)  # 按创建时间排序
         
         if not sessions:
             return {

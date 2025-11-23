@@ -40,6 +40,24 @@ document.getElementById('candidateForm').addEventListener('submit', async functi
         
         const result = await response.json();
         
+        // 查询候选人ID（通过姓名或邮箱）
+        let candidateId = null;
+        try {
+            const candidatesResponse = await fetch(`${API_BASE}/candidates`);
+            if (candidatesResponse.ok) {
+                const candidates = await candidatesResponse.json();
+                const candidate = candidates.find(c => 
+                    c.name === candidateData.name || c.email === candidateData.email
+                );
+                if (candidate) {
+                    candidateId = candidate.id;
+                    console.log('找到候选人ID:', candidateId);
+                }
+            }
+        } catch (error) {
+            console.warn('查询候选人ID失败:', error);
+        }
+        
         // 根据候选人姓名获取岗位信息
         const positionMapping = {
             "田忠": "Python工程师服务器端开发",
@@ -53,11 +71,13 @@ document.getElementById('candidateForm').addEventListener('submit', async functi
         const candidatePosition = positionMapping[candidateData.name] || "未指定岗位";
         
         console.log('候选人姓名:', candidateData.name);
+        console.log('候选人ID:', candidateId);
         console.log('匹配到的岗位:', candidatePosition);
         
         // 保存会话信息到localStorage
         const sessionData = {
             sessionId: result.session_id,
+            candidateId: candidateId,  // 添加候选人ID
             candidateName: candidateData.name,
             candidateEmail: candidateData.email,
             candidatePosition: candidatePosition,

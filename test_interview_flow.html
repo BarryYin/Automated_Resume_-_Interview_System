@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试面试流程</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 16px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 16px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .info {
+            color: #17a2b8;
+        }
+    </style>
+</head>
+<body>
+    <h1>面试流程测试</h1>
+    
+    <div class="test-section">
+        <h2>步骤1: 模拟候选人登录</h2>
+        <p>选择一个候选人进行测试：</p>
+        <button onclick="testLogin('包涵', '422342160@qq.com')">包涵</button>
+        <button onclick="testLogin('田忠', '422342158@qq.com')">田忠</button>
+        <button onclick="testLogin('栾平', '422342161@qq.com')">栾平</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>步骤2: 检查保存的会话信息</h2>
+        <button onclick="checkSession()">检查localStorage</button>
+        <div id="sessionResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>步骤3: 查询候选人的预生成问题</h2>
+        <button onclick="checkQuestions()">查询问题</button>
+        <div id="questionsResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>步骤4: 模拟面试页面加载</h2>
+        <button onclick="simulateInterviewLoad()">模拟加载</button>
+        <div id="interviewResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+
+        async function testLogin(name, email) {
+            const resultDiv = document.getElementById('loginResult');
+            resultDiv.innerHTML = '<span class="info">正在模拟登录...</span>';
+            
+            try {
+                // 1. 调用开始面试API
+                const response = await fetch(`${API_BASE}/interview/start`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        email: email,
+                        invitation_code: null
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('API调用失败');
+                }
+                
+                const result = await response.json();
+                
+                // 2. 查询候选人ID
+                const candidatesResponse = await fetch(`${API_BASE}/candidates`);
+                const candidates = await candidatesResponse.json();
+                const candidate = candidates.find(c => c.name === name || c.email === email);
+                
+                if (!candidate) {
+                    throw new Error('未找到候选人');
+                }
+                
+                // 3. 保存会话信息
+                const positionMapping = {
+                    "田忠": "Python工程师服务器端开发",
+                    "栾平": "Python工程师服务器端开发",
+                    "包涵": "C端产品经理-AIGC领域",
+                    "乔志天": "C端产品经理-AIGC领域",
+                    "高飞虎": "金融海外投资新媒体内容文案编辑运营",
+                    "龙小天": "金融海外投资新媒体内容文案编辑运营"
+                };
+                
+                const sessionData = {
+                    sessionId: result.session_id,
+                    candidateId: candidate.id,
+                    candidateName: name,
+                    candidateEmail: email,
+                    candidatePosition: positionMapping[name] || "未指定岗位",
+                    invitationCode: null
+                };
+                
+                localStorage.setItem('interviewSession', JSON.stringify(sessionData));
+                
+                resultDiv.innerHTML = `<span class="success">✓ 登录成功</span>\n\n` +
+                    `候选人: ${name}\n` +
+                    `候选人ID: ${candidate.id}\n` +
+                    `会话ID: ${result.session_id}\n` +
+                    `职位: ${sessionData.candidatePosition}\n` +
+                    `有预生成问题: ${candidate.has_questions ? '是' : '否'}\n` +
+                    `问题数量: ${candidate.interview_questions ? candidate.interview_questions.length : 0}\n\n` +
+                    `会话信息已保存到localStorage`;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">✗ 失败</span>\n\n${error.message}`;
+            }
+        }
+
+        function checkSession() {
+            const resultDiv = document.getElementById('sessionResult');
+            
+            try {
+                const sessionData = localStorage.getItem('interviewSession');
+                
+                if (!sessionData) {
+                    resultDiv.innerHTML = '<span class="error">✗ 未找到会话信息</span>\n\n请先执行步骤1';
+                    return;
+                }
+                
+                const session = JSON.parse(sessionData);
+                
+                resultDiv.innerHTML = `<span class="success">✓ 找到会话信息</span>\n\n` +
+                    JSON.stringify(session, null, 2);
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">✗ 解析失败</span>\n\n${error.message}`;
+            }
+        }
+
+        async function checkQuestions() {
+            const resultDiv = document.getElementById('questionsResult');
+            
+            try {
+                const sessionData = localStorage.getItem('interviewSession');
+                if (!sessionData) {
+                    resultDiv.innerHTML = '<span class="error">✗ 未找到会话信息</span>\n\n请先执行步骤1';
+                    return;
+                }
+                
+                const session = JSON.parse(sessionData);
+                const candidateId = session.candidateId;
+                
+                if (!candidateId) {
+                    resultDiv.innerHTML = '<span class="error">✗ 会话中没有candidateId</span>';
+                    return;
+                }
+                
+                resultDiv.innerHTML = '<span class="info">正在查询...</span>';
+                
+                const response = await fetch(`${API_BASE}/candidates/${candidateId}/questions`);
+                
+                if (!response.ok) {
+                    throw new Error('API调用失败');
+                }
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `<span class="success">✓ 查询成功</span>\n\n` +
+                    `候选人: ${data.candidate_name}\n` +
+                    `有问题: ${data.has_questions ? '是' : '否'}\n` +
+                    `问题数量: ${data.questions.length}\n` +
+                    `策略: ${data.strategy ? data.strategy.substring(0, 50) + '...' : '无'}\n\n` +
+                    `前3个问题:\n` +
+                    data.questions.slice(0, 3).map((q, i) => 
+                        `${i + 1}. [${q.dimension}] ${q.question.substring(0, 60)}...`
+                    ).join('\n');
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">✗ 失败</span>\n\n${error.message}`;
+            }
+        }
+
+        async function simulateInterviewLoad() {
+            const resultDiv = document.getElementById('interviewResult');
+            
+            try {
+                const sessionData = localStorage.getItem('interviewSession');
+                if (!sessionData) {
+                    resultDiv.innerHTML = '<span class="error">✗ 未找到会话信息</span>\n\n请先执行步骤1';
+                    return;
+                }
+                
+                const session = JSON.parse(sessionData);
+                resultDiv.innerHTML = '<span class="info">正在模拟面试页面加载...</span>';
+                
+                // 模拟interview.js中的逻辑
+                const candidateId = session.candidateId;
+                
+                if (!candidateId) {
+                    resultDiv.innerHTML = '<span class="error">✗ 没有candidateId</span>\n\n' +
+                        '这就是问题所在！会话中缺少candidateId字段。\n' +
+                        '面试页面无法加载预生成的问题。';
+                    return;
+                }
+                
+                // 尝试加载预生成的问题
+                const questionsResponse = await fetch(`${API_BASE}/candidates/${candidateId}/questions`);
+                
+                if (questionsResponse.ok) {
+                    const questionsData = await questionsResponse.json();
+                    
+                    if (questionsData.has_questions && questionsData.questions.length > 0) {
+                        resultDiv.innerHTML = `<span class="success">✓ 成功加载预生成的问题</span>\n\n` +
+                            `候选人: ${questionsData.candidate_name}\n` +
+                            `问题数量: ${questionsData.questions.length}\n` +
+                            `策略: ${questionsData.strategy}\n\n` +
+                            `这些问题将在面试中使用！\n\n` +
+                            `问题列表:\n` +
+                            questionsData.questions.map((q, i) => 
+                                `${i + 1}. [${q.dimension}] ${q.question}`
+                            ).join('\n\n');
+                    } else {
+                        resultDiv.innerHTML = '<span class="error">✗ 没有预生成的问题</span>\n\n' +
+                            '将会实时生成新问题';
+                    }
+                } else {
+                    throw new Error('查询问题失败');
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">✗ 失败</span>\n\n${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

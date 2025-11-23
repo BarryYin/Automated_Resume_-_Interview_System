@@ -441,6 +441,7 @@ class CandidateDetail {
         const dimensions = ['knowledge', 'skill', 'ability', 'personality', 'motivation', 'value'];
         
         let allScores = [];
+        let validScores = []; // 只包含有效分数（不包括0分）
         
         dimensions.forEach(dimension => {
             const score = this.evaluationData[dimension];
@@ -452,19 +453,32 @@ class CandidateDetail {
                 scoreElement.textContent = `${Math.round(score)} 分`;
                 progressElement.style.width = `${score}%`;
                 allScores.push(score);
+                validScores.push(score);
             } else {
-                // 没有分数，算0分
-                scoreElement.textContent = '0 分';
+                // 没有分数，显示为未评分
+                scoreElement.textContent = '未评分';
                 scoreElement.style.color = '#999';
                 progressElement.style.width = '0%';
                 allScores.push(0);
             }
         });
 
-        // 计算总分（所有6个维度的平均分，包括0分）
-        const totalScore = Math.round(
-            allScores.reduce((sum, score) => sum + score, 0) / 6
-        );
+        // 计算总分：
+        // 1. 如果有候选人的score字段（来自数据库的实际面试评分），优先使用
+        // 2. 否则，使用有效维度分数的平均分（不包括未评分的维度）
+        let totalScore;
+        if (this.candidateData && this.candidateData.score !== null && this.candidateData.score !== undefined) {
+            // 使用候选人数据中的总分（与列表页一致）
+            totalScore = Math.round(this.candidateData.score);
+        } else if (validScores.length > 0) {
+            // 使用有效分数的平均分
+            totalScore = Math.round(
+                validScores.reduce((sum, score) => sum + score, 0) / validScores.length
+            );
+        } else {
+            // 没有任何评分
+            totalScore = 0;
+        }
         
         const totalScoreElement = document.getElementById('totalScore');
         totalScoreElement.textContent = `${totalScore} 分`;
