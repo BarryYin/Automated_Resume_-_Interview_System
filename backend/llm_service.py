@@ -8,14 +8,18 @@ import json
 import PyPDF2
 from pathlib import Path
 import re
+from config import config
 
 class QwenLLMService:
     def __init__(self):
-        # 配置通义千问API
+        # 从配置文件加载API配置
         self.client = openai.OpenAI(
-            api_key="sk-b20dbc29a6ab4ada8b4711d8b817f7cb",
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+            api_key=config.get('llm.api_key'),
+            base_url=config.get('llm.base_url')
         )
+        self.model = config.get('llm.model', 'qwen-plus')
+        self.temperature = config.get('llm.temperature', 0.7)
+        self.max_tokens = config.get('llm.max_tokens', 2000)
         
         # 评估维度定义
         self.evaluation_dimensions = {
@@ -92,7 +96,7 @@ class QwenLLMService:
 
         try:
             response = self.client.chat.completions.create(
-                model="qwen-max",
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "你是一位经验丰富的HR面试专家，擅长根据候选人背景设计深度面试问题。"},
                     {"role": "user", "content": prompt}
@@ -224,7 +228,7 @@ class QwenLLMService:
 
         try:
             response = self.client.chat.completions.create(
-                model="qwen-max",
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "你是一位经验丰富的HR面试专家，擅长根据候选人背景和反馈意见设计深度面试问题。"},
                     {"role": "user", "content": prompt}
@@ -358,7 +362,7 @@ class QwenLLMService:
 
         try:
             response = self.client.chat.completions.create(
-                model="qwen-max",
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "你是一位专业的HR评估专家，能够客观公正地评估候选人的面试表现。"},
                     {"role": "user", "content": prompt}

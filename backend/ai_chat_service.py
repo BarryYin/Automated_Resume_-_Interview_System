@@ -7,14 +7,18 @@ import openai
 import json
 import sqlite3
 from datetime import datetime, timedelta
+from config import config
 
 class AIChatService:
     def __init__(self):
-        # 配置通义千问Code API
+        # 从配置文件加载API配置
         self.client = openai.OpenAI(
-            api_key="sk-b20dbc29a6ab4ada8b4711d8b817f7cb",
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+            api_key=config.get('llm.api_key'),
+            base_url=config.get('llm.base_url')
         )
+        self.model = config.get('llm.model', 'qwen-plus')
+        self.temperature = config.get('llm.temperature', 0.7)
+        self.max_tokens = config.get('llm.max_tokens', 2000)
         
         # 缓存数据
         self.cached_data = None

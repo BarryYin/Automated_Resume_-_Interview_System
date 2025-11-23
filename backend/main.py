@@ -1895,12 +1895,12 @@ async def generate_candidate_feedback(candidate_id: int, regenerate: bool = Fals
         
         try:
             response = llm_service.client.chat.completions.create(
-                model="qwen-max",
+                model=llm_service.model,
                 messages=[
                     {"role": "system", "content": "你是一位专业的HR评估专家，擅长分析候选人表现并提供建设性反馈。"},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7,
+                temperature=llm_service.temperature,
                 max_tokens=800
             )
             
