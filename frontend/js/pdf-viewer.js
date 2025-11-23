@@ -101,19 +101,14 @@ class PDFViewer {
             // 尝试从后端API加载
             const apiUrl = `http://localhost:8000/api/resume/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}`;
             
-            // 检查文件是否存在
-            const response = await fetch(apiUrl, { method: 'HEAD' });
+            console.log('加载PDF:', apiUrl);
             
-            if (response.ok) {
-                // 如果支持PDF.js，使用PDF.js加载
-                if (window.pdfjsLib) {
-                    await this.loadWithPDFJS(apiUrl);
-                } else {
-                    // 否则显示下载选项
-                    this.showDownloadOption(folder, filename);
-                }
+            // 如果支持PDF.js，直接使用PDF.js加载（会自动检查文件是否存在）
+            if (window.pdfjsLib) {
+                await this.loadWithPDFJS(apiUrl);
             } else {
-                throw new Error('文件不存在');
+                // 否则显示下载选项
+                this.showDownloadOption(folder, filename);
             }
         } catch (error) {
             console.error('加载PDF失败:', error);
@@ -124,7 +119,16 @@ class PDFViewer {
     // 使用PDF.js加载PDF
     async loadWithPDFJS(url) {
         try {
-            const pdf = await pdfjsLib.getDocument(url).promise;
+            console.log('使用PDF.js加载:', url);
+            const loadingTask = pdfjsLib.getDocument(url);
+            
+            loadingTask.onProgress = (progress) => {
+                console.log(`加载进度: ${progress.loaded} / ${progress.total}`);
+            };
+            
+            const pdf = await loadingTask.promise;
+            console.log('PDF加载成功，总页数:', pdf.numPages);
+            
             this.currentPDF = pdf;
             this.totalPages = pdf.numPages;
             this.currentPage = 1;
@@ -137,6 +141,7 @@ class PDFViewer {
             
         } catch (error) {
             console.error('PDF.js加载失败:', error);
+            console.error('错误详情:', error.message);
             throw error;
         }
     }

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简历查看器测试</title>
+    <link rel="stylesheet" href="css/pdf-viewer.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+        }
+        .candidate-list {
+            list-style: none;
+            padding: 0;
+        }
+        .candidate-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f5f5f5;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .candidate-info {
+            flex: 1;
+        }
+        .candidate-name {
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+        }
+        .candidate-position {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .view-btn {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .view-btn:hover {
+            background: #0056b3;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>简历查看器测试</h1>
+    <div class="status" id="status">正在加载候选人列表...</div>
+    <ul class="candidate-list" id="candidateList"></ul>
+
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        if (window.pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
+    <script src="js/pdf-viewer.js"></script>
+    <script>
+        async function loadCandidates() {
+            try {
+                const response = await fetch('http://localhost:8000/api/candidates');
+                const candidates = await response.json();
+                
+                const list = document.getElementById('candidateList');
+                const status = document.getElementById('status');
+                
+                status.textContent = `成功加载 ${candidates.length} 位候选人`;
+                
+                list.innerHTML = candidates.map(c => `
+                    <li class="candidate-item">
+                        <div class="candidate-info">
+                            <div class="candidate-name">${c.name}</div>
+                            <div class="candidate-position">${c.position}</div>
+                            <div style="font-size: 12px; color: #999; margin-top: 5px;">
+                                文件夹: ${c.resume_folder || '未设置'}<br>
+                                文件名: ${c.resume_file || '未设置'}
+                            </div>
+                        </div>
+                        <button class="view-btn" onclick="viewResume('${c.resume_folder}', '${c.resume_file}', '${c.name}')">
+                            查看简历
+                        </button>
+                    </li>
+                `).join('');
+                
+            } catch (error) {
+                console.error('加载失败:', error);
+                document.getElementById('status').textContent = '加载失败: ' + error.message;
+            }
+        }
+
+        function viewResume(folder, file, name) {
+            console.log(`查看简历: ${name} - ${folder}/${file}`);
+            if (window.pdfViewer && folder && file) {
+                pdfViewer.showPDFModal(folder, file);
+            } else {
+                alert('简历信息不完整');
+            }
+        }
+
+        // 页面加载时获取候选人列表
+        loadCandidates();
+    </script>
+</body>
+</html>

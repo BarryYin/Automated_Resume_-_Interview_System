@@ -170,6 +170,88 @@ class QwenLLMService:
             "interview_strategy": "基于候选人背景进行深度交流，重点关注专业能力和文化匹配度。"
         }
 
+    def regenerate_questions_with_feedback(self, candidate_info, resume_text, job_description, feedback):
+        """根据管理员反馈重新生成面试问题"""
+        
+        prompt = f"""
+你是一位专业的HR面试官，需要根据管理员的反馈意见，为候选人重新生成10个深度面试问题。
+
+候选人信息：
+- 姓名：{candidate_info.get('name', '未知')}
+- 应聘职位：{candidate_info.get('position', '未知')}
+- 邮箱：{candidate_info.get('email', '未知')}
+
+简历内容：
+{resume_text[:2000] if resume_text else '简历内容暂无'}
+
+职位描述：
+{job_description[:1000] if job_description else '职位描述暂无'}
+
+管理员反馈意见：
+{feedback}
+
+请基于以下6个评估维度，结合候选人的简历信息和管理员的反馈意见，重新生成10个针对性的面试问题：
+
+1. Knowledge（专业知识）：专业知识，包括学历、专业技术资格、理论基础
+2. Skill（专业技能）：专业技能，特别是指具体的、实际操作的能力  
+3. Ability（综合素质与能力）：综合素质与能力，特别是指抽象的能力，以及工作经验
+4. Personality（个性特质）：个性特质，包括自我定位和性格特点
+5. Motivation（求职动机）：求职动机，包括离职应聘原因和职业目标
+6. Value（价值观）：价值观，也包括个人价值观及对企业文化的认同度
+
+要求：
+- 每个维度至少1-2个问题
+- 问题要结合候选人简历中的具体信息进行追问
+- 问题要有深度，能够有效评估候选人的能力
+- 问题要自然流畅，符合面试场景
+- 特别注意管理员的反馈意见，针对性地调整问题
+- 总共10个问题
+
+请按以下JSON格式返回：
+{{
+    "questions": [
+        {{
+            "id": 1,
+            "dimension": "Knowledge",
+            "question": "具体问题内容",
+            "follow_up": "可能的追问方向"
+        }},
+        ...
+    ],
+    "interview_strategy": "整体面试策略建议"
+}}
+"""
+
+        try:
+            response = self.client.chat.completions.create(
+                model="qwen-max",
+                messages=[
+                    {"role": "system", "content": "你是一位经验丰富的HR面试专家，擅长根据候选人背景和反馈意见设计深度面试问题。"},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=2000
+            )
+            
+            content = response.choices[0].message.content
+            
+            # 尝试解析JSON响应
+            try:
+                # 提取JSON部分
+                json_match = re.search(r'\{.*\}', content, re.DOTALL)
+                if json_match:
+                    result = json.loads(json_match.group())
+                    return result
+                else:
+                    # 如果没有找到JSON，返回默认结构
+                    return self._parse_text_response(content)
+            except json.JSONDecodeError:
+                return self._parse_text_response(content)
+                
+        except Exception as e:
+            print(f"LLM调用失败: {e}")
+            return self._generate_fallback_questions(candidate_info)
+
     def _generate_fallback_questions(self, candidate_info):
         """生成备用问题"""
         position = candidate_info.get('position', '该职位')

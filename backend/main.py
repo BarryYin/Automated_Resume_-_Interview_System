@@ -365,13 +365,82 @@ async def create_candidate(candidate: Candidate):
 
 @app.get("/api/candidates")
 async def get_candidates():
-    """获取候选人列表 - 使用真实Excel数据"""
+    """获取候选人列表 - 合并Excel数据和数据库面试数据"""
     try:
         # 从Excel加载真实候选人数据
         candidates = excel_loader.load_candidates()
         
+        # 连接数据库
+        conn = sqlite3.connect('recruitment.db')
+        cursor = conn.cursor()
+        
+        for candidate in candidates:
+            candidate_name = candidate.get('name')
+            candidate_email = candidate.get('email')
+            
+            # 1. 查询数据库中的面试评分（优先使用数据库数据）
+            cursor.execute('''
+                SELECT 
+                    isq.session_id,
+                    COUNT(ia.id) as answer_count,
+                    AVG(ia.score) as avg_score,
+                    MAX(ia.created_at) as last_answer_time
+                FROM interview_session_questions isq
+                LEFT JOIN interview_answers ia ON isq.session_id = ia.session_id
+                WHERE isq.candidate_name = ? OR isq.candidate_email = ?
+                GROUP BY isq.session_id
+                ORDER BY last_answer_time DESC
+                LIMIT 1
+            ''', (candidate_name, candidate_email))
+            
+            db_interview = cursor.fetchone()
+            
+            # 如果数据库中有面试会话记录，说明候选人已经面试
+            if db_interview and db_interview[0]:  # 有会话记录
+                session_id, answer_count, avg_score, last_answer_time = db_interview
+                
+                # 只要有面试会话记录，就认为已完成面试
+                # 不管回答了多少个问题，只要提交了就算完成
+                if answer_count > 0:  # 有回答记录
+                    candidate['status'] = '已完成'
+                    candidate['score'] = int(avg_score) if avg_score else None
+                    candidate['interview_date'] = last_answer_time.split()[0] if last_answer_time else candidate.get('interview_date')
+                    candidate['db_interview'] = True
+                    candidate['answer_count'] = answer_count
+                else:
+                    # 有会话但没有回答，保持原状态
+                    candidate['db_interview'] = False
+                    candidate['answer_count'] = 0
+            else:
+                candidate['db_interview'] = False
+                candidate['answer_count'] = 0
+            
+            # 2. 查询该候选人的面试问题
+            cursor.execute('''
+                SELECT questions_json, strategy, created_at, updated_at
+                FROM interview_questions
+                WHERE candidate_name = ? OR candidate_email = ?
+                ORDER BY updated_at DESC
+                LIMIT 1
+            ''', (candidate_name, candidate_email))
+            
+            result = cursor.fetchone()
+            
+            if result:
+                questions_json, strategy, created_at, updated_at = result
+                candidate['interview_questions'] = json.loads(questions_json) if questions_json else []
+                candidate['interview_strategy'] = strategy
+                candidate['questions_generated_at'] = updated_at or created_at
+                candidate['has_questions'] = True
+            else:
+                candidate['interview_questions'] = []
+                candidate['interview_strategy'] = ''
+                candidate['questions_generated_at'] = None
+                candidate['has_questions'] = False
+        
+        conn.close()
+        
         # 确保数据可以JSON序列化
-        import json
         import numpy as np
         
         def clean_for_json(obj):
@@ -745,6 +814,189 @@ async def generate_interview_questions(candidate: Candidate):
     except Exception as e:
         print(f"生成面试问题失败: {e}")
         raise HTTPException(status_code=500, detail=f"生成面试问题失败: {str(e)}")
+
+class GenerateQuestionsRequest(BaseModel):
+    candidate_id: int
+    candidate_name: str
+    candidate_email: str
+    position: str
+    position_code: Optional[str] = None
+    feedback: Optional[str] = None  # 管理员的修改意见
+
+@app.post("/api/candidates/{candidate_id}/generate-questions")
+async def generate_candidate_questions(candidate_id: int, request: GenerateQuestionsRequest):
+    """为指定候选人生成或重新生成面试问题"""
+    try:
+        print(f"为候选人 {request.candidate_name} (ID: {candidate_id}) 生成面试问题")
+        
+        # 查找简历文件
+        resume_path = find_resume_path(request.candidate_name)
+        resume_text = ""
+        
+        if resume_path:
+            try:
+                resume_text = llm_service.extract_text_from_pdf(resume_path)
+                print(f"成功读取简历: {resume_path}")
+            except Exception as e:
+                print(f"读取简历失败: {e}")
+        
+        # 获取职位描述
+        job_description = get_job_description(request.position_code or "1001")
+        
+        # 构建候选人信息
+        candidate_data = {
+            'name': request.candidate_name,
+            'email': request.candidate_email,
+            'position': request.position
+        }
+        
+        # 如果有管理员反馈，添加到提示中
+        if request.feedback:
+            # 使用LLM根据反馈重新生成问题
+            questions_data = llm_service.regenerate_questions_with_feedback(
+                candidate_data, resume_text, job_description, request.feedback
+            )
+        else:
+            # 正常生成问题
+            questions_data = llm_service.generate_interview_questions(
+                candidate_data, resume_text, job_description
+            )
+        
+        # 保存到interview_questions表
+        conn = sqlite3.connect('recruitment.db')
+        cursor = conn.cursor()
+        
+        try:
+            # 创建表（如果不存在）
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS interview_questions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    candidate_name TEXT,
+                    candidate_email TEXT,
+                    position_code TEXT,
+                    questions_json TEXT,
+                    strategy TEXT,
+                    resume_path TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # 检查是否已存在
+            cursor.execute('''
+                SELECT id FROM interview_questions 
+                WHERE candidate_name = ? OR candidate_email = ?
+            ''', (request.candidate_name, request.candidate_email))
+            
+            existing = cursor.fetchone()
+            
+            if existing:
+                # 更新现有记录
+                cursor.execute('''
+                    UPDATE interview_questions 
+                    SET questions_json = ?, strategy = ?, resume_path = ?, 
+                        position_code = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE candidate_name = ? OR candidate_email = ?
+                ''', (
+                    json.dumps(questions_data["questions"], ensure_ascii=False),
+                    questions_data.get("interview_strategy", ""),
+                    resume_path or "",
+                    request.position_code or "1001",
+                    request.candidate_name,
+                    request.candidate_email
+                ))
+                print(f"更新了候选人 {request.candidate_name} 的面试问题")
+            else:
+                # 插入新记录
+                cursor.execute('''
+                    INSERT INTO interview_questions 
+                    (candidate_name, candidate_email, position_code, questions_json, strategy, resume_path)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (
+                    request.candidate_name,
+                    request.candidate_email,
+                    request.position_code or "1001",
+                    json.dumps(questions_data["questions"], ensure_ascii=False),
+                    questions_data.get("interview_strategy", ""),
+                    resume_path or ""
+                ))
+                print(f"保存了候选人 {request.candidate_name} 的面试问题")
+            
+            conn.commit()
+            
+            return {
+                "success": True,
+                "message": "面试问题生成成功",
+                "questions": questions_data["questions"],
+                "strategy": questions_data.get("interview_strategy", ""),
+                "generated_at": datetime.now().isoformat()
+            }
+            
+        finally:
+            conn.close()
+        
+    except Exception as e:
+        print(f"生成面试问题失败: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"生成面试问题失败: {str(e)}")
+
+@app.get("/api/candidates/{candidate_id}/questions")
+async def get_candidate_questions(candidate_id: int):
+    """获取候选人的面试问题"""
+    try:
+        # 从Excel数据获取候选人信息
+        candidates = excel_loader.load_candidates()
+        candidate_data = next((c for c in candidates if c.get('id') == candidate_id), None)
+        
+        if not candidate_data:
+            raise HTTPException(status_code=404, detail="候选人未找到")
+        
+        candidate_name = candidate_data.get('name')
+        candidate_email = candidate_data.get('email')
+        
+        # 查询面试问题
+        conn = sqlite3.connect('recruitment.db')
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT questions_json, strategy, created_at, updated_at, position_code
+            FROM interview_questions
+            WHERE candidate_name = ? OR candidate_email = ?
+            ORDER BY updated_at DESC
+            LIMIT 1
+        ''', (candidate_name, candidate_email))
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            questions_json, strategy, created_at, updated_at, position_code = result
+            return {
+                "candidate_id": candidate_id,
+                "candidate_name": candidate_name,
+                "questions": json.loads(questions_json) if questions_json else [],
+                "strategy": strategy,
+                "position_code": position_code,
+                "created_at": created_at,
+                "updated_at": updated_at,
+                "has_questions": True
+            }
+        else:
+            return {
+                "candidate_id": candidate_id,
+                "candidate_name": candidate_name,
+                "questions": [],
+                "strategy": "",
+                "position_code": None,
+                "has_questions": False
+            }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"获取面试问题失败: {e}")
+        raise HTTPException(status_code=500, detail=f"获取面试问题失败: {str(e)}")
 
 def generate_questions_by_name(candidate_name, position_code):
     """根据候选人姓名生成针对性问题"""

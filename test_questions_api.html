@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试面试问题API</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 16px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 16px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        textarea {
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>面试问题API测试</h1>
+    
+    <div class="test-section">
+        <h2>1. 获取候选人列表（含面试问题）</h2>
+        <button onclick="testGetCandidates()">获取候选人列表</button>
+        <div id="result1" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 获取指定候选人的面试问题</h2>
+        <input type="number" id="candidateId" placeholder="候选人ID (例如: 1)" value="1">
+        <button onclick="testGetQuestions()">获取面试问题</button>
+        <div id="result2" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 为候选人生成面试问题</h2>
+        <input type="number" id="genCandidateId" placeholder="候选人ID" value="1">
+        <input type="text" id="genCandidateName" placeholder="候选人姓名" value="田忠">
+        <input type="email" id="genCandidateEmail" placeholder="候选人邮箱" value="tianz@example.com">
+        <input type="text" id="genPosition" placeholder="应聘职位" value="Python工程师服务器端开发">
+        <input type="text" id="genPositionCode" placeholder="职位代码" value="1001">
+        <button onclick="testGenerateQuestions()">生成问题</button>
+        <div id="result3" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. 根据反馈重新生成问题</h2>
+        <input type="number" id="feedbackCandidateId" placeholder="候选人ID" value="1">
+        <input type="text" id="feedbackCandidateName" placeholder="候选人姓名" value="田忠">
+        <input type="email" id="feedbackCandidateEmail" placeholder="候选人邮箱" value="tianz@example.com">
+        <input type="text" id="feedbackPosition" placeholder="应聘职位" value="Python工程师服务器端开发">
+        <textarea id="feedbackText" placeholder="管理员反馈意见（例如：问题太简单，需要更深入考察实际项目经验）">问题需要更加深入，增加对AIGC技术的考察，减少理论知识，增加实践案例。</textarea>
+        <button onclick="testRegenerateWithFeedback()">根据反馈重新生成</button>
+        <div id="result4" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+
+        async function testGetCandidates() {
+            const resultDiv = document.getElementById('result1');
+            resultDiv.textContent = '正在请求...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/candidates`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `<span class="success">✓ 成功</span>\n\n` + 
+                    `获取到 ${data.length} 个候选人\n\n` +
+                    data.slice(0, 2).map(c => 
+                        `候选人: ${c.name}\n` +
+                        `职位: ${c.position}\n` +
+                        `是否有问题: ${c.has_questions ? '是' : '否'}\n` +
+                        `问题数量: ${c.interview_questions ? c.interview_questions.length : 0}\n` +
+                        `更新时间: ${c.questions_generated_at || '未生成'}\n`
+                    ).join('\n---\n\n') +
+                    '\n\n完整数据:\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">✗ 失败</span>\n\n${error.message}`;
+            }
+        }
+
+        async function testGetQuestions() {
+            const candidateId = document.getElementById('candidateId').value;
+            const resultDiv = document.getElementById('result2');
+            resultDiv.textContent = '正在请求...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/candidates/${candidateId}/questions`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `<span class="success">✓ 成功</span>\n\n` +
+                    `候选人: ${data.candidate_name}\n` +
+                    `是否有问题: ${data.has_questions ? '是' : '否'}\n` +
+                    `问题数量: ${data.questions.length}\n` +
+                    `策略: ${data.strategy || '无'}\n\n` +
+                    `问题列表:\n` +
+                    data.questions.map((q, i) => 
+                        `${i + 1}. [${q.dimension}] ${q.question}\n   追问: ${q.follow_up || '无'}`
+                    ).join('\n\n') +
+                    '\n\n完整数据:\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">✗ 失败</span>\n\n${error.message}`;
+            }
+        }
+
+        async function testGenerateQuestions() {
+            const candidateId = document.getElementById('genCandidateId').value;
+            const candidateName = document.getElementById('genCandidateName').value;
+            const candidateEmail = document.getElementById('genCandidateEmail').value;
+            const position = document.getElementById('genPosition').value;
+            const positionCode = document.getElementById('genPositionCode').value;
+            
+            const resultDiv = document.getElementById('result3');
+            resultDiv.textContent = '正在生成问题，请稍候...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/candidates/${candidateId}/generate-questions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        candidate_id: parseInt(candidateId),
+                        candidate_name: candidateName,
+                        candidate_email: candidateEmail,
+                        position: position,
+                        position_code: positionCode
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<span class="success">✓ 成功生成</span>\n\n` +
+                        `生成时间: ${data.generated_at}\n` +
+                        `问题数量: ${data.questions.length}\n` +
+                        `策略: ${data.strategy}\n\n` +
+                        `问题列表:\n` +
+                        data.questions.map((q, i) => 
+                            `${i + 1}. [${q.dimension}] ${q.question}\n   追问: ${q.follow_up || '无'}`
+                        ).join('\n\n') +
+                        '\n\n完整数据:\n' + JSON.stringify(data, null, 2);
+                } else {
+                    resultDiv.innerHTML = `<span class="error">✗ 失败</span>\n\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">✗ 失败</span>\n\n${error.message}`;
+            }
+        }
+
+        async function testRegenerateWithFeedback() {
+            const candidateId = document.getElementById('feedbackCandidateId').value;
+            const candidateName = document.getElementById('feedbackCandidateName').value;
+            const candidateEmail = document.getElementById('feedbackCandidateEmail').value;
+            const position = document.getElementById('feedbackPosition').value;
+            const feedback = document.getElementById('feedbackText').value;
+            
+            const resultDiv = document.getElementById('result4');
+            resultDiv.textContent = '正在根据反馈重新生成问题，请稍候...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/candidates/${candidateId}/generate-questions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        candidate_id: parseInt(candidateId),
+                        candidate_name: candidateName,
+                        candidate_email: candidateEmail,
+                        position: position,
+                        position_code: '1001',
+                        feedback: feedback
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<span class="success">✓ 成功根据反馈重新生成</span>\n\n` +
+                        `生成时间: ${data.generated_at}\n` +
+                        `问题数量: ${data.questions.length}\n` +
+                        `策略: ${data.strategy}\n\n` +
+                        `问题列表:\n` +
+                        data.questions.map((q, i) => 
+                            `${i + 1}. [${q.dimension}] ${q.question}\n   追问: ${q.follow_up || '无'}`
+                        ).join('\n\n') +
+                        '\n\n完整数据:\n' + JSON.stringify(data, null, 2);
+                } else {
+                    resultDiv.innerHTML = `<span class="error">✗ 失败</span>\n\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">✗ 失败</span>\n\n${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

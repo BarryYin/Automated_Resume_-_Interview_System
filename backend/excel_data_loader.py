@@ -41,31 +41,34 @@ class ExcelDataLoader:
                 candidate_id = row.get("id", index + 1) if pd.notna(row.get("id")) else index + 1
                 job_id = row.get("岗位编号", None) if pd.notna(row.get("岗位编号")) else None
                 
+                # 获取各维度评分
+                knowledge = self._safe_float(row.get("Knowledge"))
+                skill = self._safe_float(row.get("Skill"))
+                ability = self._safe_float(row.get("Ability"))
+                personality = self._safe_float(row.get("Personality"))
+                motivation = self._safe_float(row.get("Motivation"))
+                value = self._safe_float(row.get("Value"))
+                
+                # 收集所有有效的维度评分
+                dimension_scores = [s for s in [knowledge, skill, ability, personality, motivation, value] if s is not None]
+                
                 # 确定面试状态和评分
+                # 优先级1: 如果有面试总评分，使用总评分
                 if interview_score and pd.notna(interview_score):
                     status = "已完成"
                     score = int(float(interview_score))
+                # 优先级2: 如果有维度评分，计算平均分作为总分
+                elif dimension_scores:
+                    status = "已完成"
+                    score = int(sum(dimension_scores) / len(dimension_scores))
+                # 优先级3: 如果标记为已面试但没有评分
                 elif is_interviewed == "是":
                     status = "面试中"
                     score = None
+                # 优先级4: 默认为待面试
                 else:
                     status = "待面试"
                     score = None
-                
-                # 为田忠添加一些评分数据（因为他已经面试了）
-                if name == "田忠" and is_interviewed == "是":
-                    status = "已完成"
-                    # 基于他的各维度评分计算总分
-                    knowledge = self._safe_float(row.get("Knowledge"))
-                    skill = self._safe_float(row.get("Skill"))
-                    ability = self._safe_float(row.get("Ability"))
-                    personality = self._safe_float(row.get("Personality"))
-                    
-                    scores = [s for s in [knowledge, skill, ability, personality] if s is not None]
-                    if scores:
-                        score = int(sum(scores) / len(scores))
-                    else:
-                        score = 85  # 默认评分
                 
                 # 处理面试时间
                 if interview_time and pd.notna(interview_time):
@@ -78,6 +81,9 @@ class ExcelDataLoader:
                         interview_date = datetime.now() - timedelta(days=random.randint(0, 7))
                 else:
                     interview_date = datetime.now() - timedelta(days=random.randint(0, 7))
+                
+                # 根据职位确定简历文件夹
+                resume_folder, resume_file = self._get_resume_info(name, position)
                 
                 candidate = {
                     "id": candidate_id,
@@ -94,10 +100,14 @@ class ExcelDataLoader:
                     "score": score,
                     "interview_date": interview_date.strftime("%Y-%m-%d"),
                     "created_at": interview_date.strftime("%Y-%m-%d %H:%M:%S"),
-                    "knowledge_score": self._safe_float(row.get("Knowledge")),
-                    "skill_score": self._safe_float(row.get("Skill")),
-                    "ability_score": self._safe_float(row.get("Ability")),
-                    "personality_score": self._safe_float(row.get("Personality"))
+                    "knowledge_score": knowledge,
+                    "skill_score": skill,
+                    "ability_score": ability,
+                    "personality_score": personality,
+                    "motivation_score": motivation,
+                    "value_score": value,
+                    "resume_folder": resume_folder,
+                    "resume_file": resume_file
                 }
                 candidates.append(candidate)
             
@@ -395,6 +405,43 @@ class ExcelDataLoader:
         if pd.notna(value) and not np.isinf(value):
             return float(value)
         return None
+    
+    def _get_resume_info(self, candidate_name, position):
+        """根据候选人姓名和职位获取简历文件夹和文件名"""
+        # 职位到文件夹的映射
+        position_folder_mapping = {
+            "Python工程师服务器端开发": "Python工程师服务器端开发",
+            "C端产品经理-AIGC领域": "C端产品经理-AIGC领域",
+            "金融海外投资新媒体内容文案编辑运营": "金融海外投资新媒体内容文案编辑运营"
+        }
+        
+        # 根据职位名称匹配文件夹
+        resume_folder = None
+        for pos_key, folder_name in position_folder_mapping.items():
+            if pos_key in position or position in pos_key:
+                resume_folder = folder_name
+                break
+        
+        # 如果没有匹配到，尝试根据关键词匹配
+        if not resume_folder:
+            if "Python" in position or "python" in position or "工程师" in position:
+                resume_folder = "Python工程师服务器端开发"
+            elif "产品" in position or "PM" in position:
+                resume_folder = "C端产品经理-AIGC领域"
+            elif "新媒体" in position or "编辑" in position or "运营" in position:
+                resume_folder = "金融海外投资新媒体内容文案编辑运营"
+            else:
+                resume_folder = "Python工程师服务器端开发"  # 默认文件夹
+        
+        # 简历文件名就是候选人姓名.pdf
+        resume_file = f"{candidate_name}.pdf"
+        
+        # 验证文件是否存在
+        resume_path = self.base_path / resume_folder / resume_file
+        if not resume_path.exists():
+            print(f"警告: 简历文件不存在: {resume_path}")
+        
+        return resume_folder, resume_file
     
     def _generate_realistic_salary(self, name, position, job_id):
         """基于真实数据生成合理的薪资期望"""

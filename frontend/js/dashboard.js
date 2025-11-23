@@ -12,6 +12,7 @@ const API_CONFIG = {
 
 // 全局变量
 let currentTab = 'positions';
+let cachedCandidates = null; // 缓存候选人数据
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -283,6 +284,7 @@ async function loadCandidatesData() {
         const response = await fetch('http://localhost:8000/api/candidates');
         if (response.ok) {
             const candidates = await response.json();
+            cachedCandidates = candidates; // 缓存候选人数据
             renderCandidates(candidates);
         } else {
             throw new Error('获取候选人数据失败');
@@ -333,6 +335,12 @@ function renderCandidates(candidates) {
                                 </svg>
                                 查看详情
                             </button>
+                            <button class="action-btn questions" onclick="showQuestionsModal(${candidate.id}, '${candidate.name}', '${candidate.email}', '${candidate.position}')" title="查看和管理面试问题">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+                                </svg>
+                                面试问题
+                            </button>
                             <button class="action-btn resume" onclick="viewResumeByName('${candidate.name}')">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
@@ -362,6 +370,19 @@ function renderCandidates(candidates) {
                         <span class="position">应聘: ${candidate.position}</span>
                         <span class="date">面试日期: ${candidate.interview_date || '未安排'}</span>
                     </div>
+                    ${candidate.has_questions ? `
+                        <div class="detail-row questions-info">
+                            <span class="questions-badge">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 4px;">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                </svg>
+                                已生成 ${candidate.interview_questions ? candidate.interview_questions.length : 0} 个面试问题
+                            </span>
+                            <span class="questions-date" style="color: #666; font-size: 12px;">
+                                更新于: ${candidate.questions_generated_at ? new Date(candidate.questions_generated_at).toLocaleString('zh-CN') : '未知'}
+                            </span>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -1757,25 +1778,34 @@ function addCandidate() {
 }
 
 // 根据候选人姓名查看简历
-function viewResumeByName(candidateName) {
-    // 根据姓名映射到对应的文件夹和文件
-    const resumeMapping = {
-        '田忠': {
-            folder: 'Python工程师服务器端开发',
-            file: '田忠.pdf'
-        },
-        '高飞虎': {
-            folder: '金融海外投资新媒体内容文案编辑运营',
-            file: '高飞虎.pdf'
+async function viewResumeByName(candidateName) {
+    try {
+        // 优先使用缓存的候选人数据
+        let candidates = cachedCandidates;
+        
+        // 如果没有缓存，从API获取
+        if (!candidates) {
+            console.log('缓存未命中，从API获取候选人数据');
+            const response = await fetch('http://localhost:8000/api/candidates');
+            if (!response.ok) {
+                throw new Error('获取候选人数据失败');
+            }
+            candidates = await response.json();
+            cachedCandidates = candidates;
         }
-        // 可以根据需要添加更多映射
-    };
-    
-    const resumeInfo = resumeMapping[candidateName];
-    if (resumeInfo) {
-        viewResume(resumeInfo.folder, resumeInfo.file);
-    } else {
-        alert(`未找到 ${candidateName} 的简历文件`);
+        
+        const candidate = candidates.find(c => c.name === candidateName);
+        
+        if (candidate && candidate.resume_folder && candidate.resume_file) {
+            console.log(`查看 ${candidateName} 的简历:`, candidate.resume_folder, candidate.resume_file);
+            viewResume(candidate.resume_folder, candidate.resume_file);
+        } else {
+            console.error(`未找到 ${candidateName} 的简历信息`, candidate);
+            alert(`未找到 ${candidateName} 的简历文件`);
+        }
+    } catch (error) {
+        console.error('查看简历失败:', error);
+        alert('加载简历信息失败，请稍后重试');
     }
 }
 
@@ -2247,4 +2277,554 @@ function getStatusIndicator(status) {
                 <span>状态待更新</span>
             </div>`;
     }
+}
+
+
+// 显示面试问题管理模态框
+async function showQuestionsModal(candidateId, candidateName, candidateEmail, position) {
+    console.log('显示面试问题模态框:', candidateId, candidateName);
+    
+    // 创建模态框
+    const modal = document.createElement('div');
+    modal.id = 'questionsModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        overflow-y: auto;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <div>
+                    <h3 style="margin: 0; color: #1a1a1a; font-size: 24px;">${candidateName} - 面试问题管理</h3>
+                    <p style="margin: 8px 0 0 0; color: #666; font-size: 14px;">应聘职位: ${position}</p>
+                </div>
+                <button onclick="closeQuestionsModal()" style="
+                    background: none;
+                    border: none;
+                    font-size: 28px;
+                    cursor: pointer;
+                    color: #666;
+                    padding: 0;
+                    width: 32px;
+                    height: 32px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">×</button>
+            </div>
+            
+            <div id="questionsContent" style="margin-bottom: 20px;">
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    <div class="loading-spinner"></div>
+                    <p>正在加载面试问题...</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                <button onclick="regenerateQuestions(${candidateId}, '${candidateName}', '${candidateEmail}', '${position}')" style="
+                    padding: 10px 20px;
+                    background: #28a745;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: 500;
+                ">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 4px;">
+                        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                    </svg>
+                    重新生成问题
+                </button>
+                <button onclick="regenerateWithFeedback(${candidateId}, '${candidateName}', '${candidateEmail}', '${position}')" style="
+                    padding: 10px 20px;
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: 500;
+                ">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 4px;">
+                        <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                    </svg>
+                    提出修改意见
+                </button>
+                <button onclick="closeQuestionsModal()" style="
+                    padding: 10px 20px;
+                    background: #6c757d;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: 500;
+                ">关闭</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 加载问题数据
+    await loadCandidateQuestions(candidateId);
+}
+
+// 加载候选人的面试问题
+async function loadCandidateQuestions(candidateId) {
+    try {
+        const response = await fetch(`http://localhost:8000/api/candidates/${candidateId}/questions`);
+        
+        if (!response.ok) {
+            throw new Error('加载问题失败');
+        }
+        
+        const data = await response.json();
+        const contentDiv = document.getElementById('questionsContent');
+        
+        if (!data.has_questions || data.questions.length === 0) {
+            contentDiv.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="#ccc" style="margin-bottom: 16px;">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+                    </svg>
+                    <h4 style="margin: 0 0 8px 0; color: #333;">暂无面试问题</h4>
+                    <p style="margin: 0; color: #666;">点击"重新生成问题"按钮为该候选人生成个性化面试问题</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // 显示问题列表
+        const dimensionNames = {
+            'Knowledge': '专业知识',
+            'Skill': '专业技能',
+            'Ability': '综合能力',
+            'Personality': '个性特质',
+            'Motivation': '求职动机',
+            'Value': '价值观'
+        };
+        
+        let questionsHTML = '';
+        
+        if (data.strategy) {
+            questionsHTML += `
+                <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 8px 0; color: #333; font-size: 14px;">面试策略</h4>
+                    <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">${data.strategy}</p>
+                </div>
+            `;
+        }
+        
+        questionsHTML += '<div style="display: flex; flex-direction: column; gap: 16px;">';
+        
+        data.questions.forEach((q, index) => {
+            questionsHTML += `
+                <div style="
+                    background: #fff;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 8px;
+                    padding: 16px;
+                    transition: box-shadow 0.2s;
+                " onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <div style="
+                            min-width: 32px;
+                            height: 32px;
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-weight: bold;
+                            font-size: 14px;
+                        ">${q.id}</div>
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span style="
+                                    background: #e3f2fd;
+                                    color: #1976d2;
+                                    padding: 4px 12px;
+                                    border-radius: 12px;
+                                    font-size: 12px;
+                                    font-weight: 500;
+                                ">${dimensionNames[q.dimension] || q.dimension}</span>
+                            </div>
+                            <p style="margin: 0 0 8px 0; color: #333; font-size: 15px; font-weight: 500; line-height: 1.6;">
+                                ${q.question}
+                            </p>
+                            ${q.follow_up ? `
+                                <p style="margin: 0; color: #666; font-size: 13px; line-height: 1.5;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#666" style="vertical-align: middle; margin-right: 4px;">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                                    </svg>
+                                    追问: ${q.follow_up}
+                                </p>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        questionsHTML += '</div>';
+        
+        contentDiv.innerHTML = questionsHTML;
+        
+    } catch (error) {
+        console.error('加载面试问题失败:', error);
+        const contentDiv = document.getElementById('questionsContent');
+        contentDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #dc3545;">
+                <p>加载面试问题失败，请稍后重试</p>
+            </div>
+        `;
+    }
+}
+
+// 关闭问题模态框
+function closeQuestionsModal() {
+    const modal = document.getElementById('questionsModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// 重新生成问题
+async function regenerateQuestions(candidateId, candidateName, candidateEmail, position) {
+    if (!confirm(`确定要为 ${candidateName} 重新生成面试问题吗？这将覆盖现有的问题。`)) {
+        return;
+    }
+    
+    const contentDiv = document.getElementById('questionsContent');
+    contentDiv.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <div class="loading-spinner"></div>
+            <p>正在生成新的面试问题，请稍候...</p>
+        </div>
+    `;
+    
+    try {
+        // 获取岗位代码
+        const positionCodeMap = {
+            'Python工程师服务器端开发': '1001',
+            'C端产品经理-AIGC领域': '1002',
+            '金融海外投资新媒体内容文案编辑运营': '1003'
+        };
+        
+        const positionCode = positionCodeMap[position] || '1001';
+        
+        const response = await fetch(`http://localhost:8000/api/candidates/${candidateId}/generate-questions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                candidate_id: candidateId,
+                candidate_name: candidateName,
+                candidate_email: candidateEmail,
+                position: position,
+                position_code: positionCode
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('生成问题失败');
+        }
+        
+        const data = await response.json();
+        
+        // 显示成功消息
+        showNotification('面试问题生成成功！', 'success');
+        
+        // 重新加载问题
+        await loadCandidateQuestions(candidateId);
+        
+        // 刷新候选人列表
+        await loadCandidates();
+        
+    } catch (error) {
+        console.error('生成面试问题失败:', error);
+        showNotification('生成面试问题失败，请稍后重试', 'error');
+        contentDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #dc3545;">
+                <p>生成面试问题失败，请稍后重试</p>
+            </div>
+        `;
+    }
+}
+
+// 根据反馈重新生成问题
+async function regenerateWithFeedback(candidateId, candidateName, candidateEmail, position) {
+    // 创建反馈输入模态框
+    const feedbackModal = document.createElement('div');
+    feedbackModal.id = 'feedbackModal';
+    feedbackModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1001;
+    `;
+    
+    feedbackModal.innerHTML = `
+        <div style="
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+        ">
+            <h3 style="margin: 0 0 16px 0; color: #1a1a1a;">提出修改意见</h3>
+            <p style="margin: 0 0 20px 0; color: #666; font-size: 14px;">
+                请描述您对当前面试问题的修改意见，AI将根据您的反馈重新生成更合适的问题。
+            </p>
+            
+            <textarea id="feedbackText" placeholder="例如：问题太简单，需要更深入考察候选人的实际项目经验；增加对AIGC技术理解的考察；减少理论知识，增加实践案例..." style="
+                width: 100%;
+                min-height: 150px;
+                padding: 12px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                font-size: 14px;
+                font-family: inherit;
+                resize: vertical;
+                box-sizing: border-box;
+            "></textarea>
+            
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                <button onclick="closeFeedbackModal()" style="
+                    padding: 10px 20px;
+                    background: #6c757d;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">取消</button>
+                <button onclick="submitFeedbackAndRegenerate(${candidateId}, '${candidateName}', '${candidateEmail}', '${position}')" style="
+                    padding: 10px 20px;
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: 500;
+                ">提交并重新生成</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(feedbackModal);
+    document.getElementById('feedbackText').focus();
+}
+
+// 关闭反馈模态框
+function closeFeedbackModal() {
+    const modal = document.getElementById('feedbackModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// 提交反馈并重新生成
+async function submitFeedbackAndRegenerate(candidateId, candidateName, candidateEmail, position) {
+    const feedback = document.getElementById('feedbackText').value.trim();
+    
+    if (!feedback) {
+        alert('请输入修改意见');
+        return;
+    }
+    
+    // 关闭反馈模态框
+    closeFeedbackModal();
+    
+    const contentDiv = document.getElementById('questionsContent');
+    contentDiv.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <div class="loading-spinner"></div>
+            <p>正在根据您的反馈重新生成面试问题，请稍候...</p>
+        </div>
+    `;
+    
+    try {
+        // 获取岗位代码
+        const positionCodeMap = {
+            'Python工程师服务器端开发': '1001',
+            'C端产品经理-AIGC领域': '1002',
+            '金融海外投资新媒体内容文案编辑运营': '1003'
+        };
+        
+        const positionCode = positionCodeMap[position] || '1001';
+        
+        const response = await fetch(`http://localhost:8000/api/candidates/${candidateId}/generate-questions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                candidate_id: candidateId,
+                candidate_name: candidateName,
+                candidate_email: candidateEmail,
+                position: position,
+                position_code: positionCode,
+                feedback: feedback
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('生成问题失败');
+        }
+        
+        const data = await response.json();
+        
+        // 显示成功消息
+        showNotification('根据您的反馈，面试问题已重新生成！', 'success');
+        
+        // 重新加载问题
+        await loadCandidateQuestions(candidateId);
+        
+        // 刷新候选人列表
+        await loadCandidates();
+        
+    } catch (error) {
+        console.error('生成面试问题失败:', error);
+        showNotification('生成面试问题失败，请稍后重试', 'error');
+        contentDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #dc3545;">
+                <p>生成面试问题失败，请稍后重试</p>
+            </div>
+        `;
+    }
+}
+
+// 显示通知消息
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 16px 24px;
+        background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#007bff'};
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 2000;
+        font-size: 14px;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// 添加动画样式
+if (!document.getElementById('notificationStyles')) {
+    const style = document.createElement('style');
+    style.id = 'notificationStyles';
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+        
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .action-btn.questions {
+            background: #17a2b8;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        
+        .action-btn.questions:hover {
+            background: #138496;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
+        }
+        
+        .questions-info {
+            background: #f0f8ff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+        
+        .questions-badge {
+            color: #0066cc;
+            font-size: 13px;
+            font-weight: 500;
+        }
+    `;
+    document.head.appendChild(style);
 }

@@ -128,13 +128,70 @@ class InterviewSession {
             const session = JSON.parse(savedSession);
             console.log('候选人会话信息:', session);
             
+            // 首先尝试从数据库加载已保存的问题
+            const candidateId = session.candidateId;
+            if (candidateId) {
+                try {
+                    const questionsResponse = await fetch(`http://localhost:8000/api/candidates/${candidateId}/questions`);
+                    if (questionsResponse.ok) {
+                        const questionsData = await questionsResponse.json();
+                        if (questionsData.has_questions && questionsData.questions.length > 0) {
+                            console.log('使用数据库中保存的面试问题');
+                            this.questions = questionsData.questions;
+                            this.totalQuestions = this.questions.length;
+                            
+                            // 创建一个新的面试会话
+                            const requestData = {
+                                name: session.candidateName,
+                                email: session.candidateEmail,
+                                invitation_code: session.invitationCode || '1001'
+                            };
+                            
+                            const sessionResponse = await fetch('http://localhost:8000/api/interview/generate-questions', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify(requestData)
+                            });
+                            
+                            if (sessionResponse.ok) {
+                                const sessionData = await sessionResponse.json();
+                                this.sessionId = sessionData.session_id;
+                            }
+                            
+                            // 更新会话信息
+                            session.llmSessionId = this.sessionId;
+                            if (!session.candidatePosition) {
+                                const positionMapping = {
+                                    "田忠": "Python工程师服务器端开发",
+                                    "栾平": "Python工程师服务器端开发",
+                                    "包涵": "C端产品经理-AIGC领域",
+                                    "乔志天": "C端产品经理-AIGC领域",
+                                    "高飞虎": "金融海外投资新媒体内容文案编辑运营",
+                                    "龙小天": "金融海外投资新媒体内容文案编辑运营"
+                                };
+                                session.candidatePosition = positionMapping[session.candidateName] || '未指定岗位';
+                            }
+                            localStorage.setItem('interviewSession', JSON.stringify(session));
+                            
+                            this.addMessage('ai', '太好了！我已经为您准备了个性化的面试问题。让我们开始吧！');
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.log('加载保存的问题失败，将生成新问题:', error);
+                }
+            }
+            
+            // 如果没有保存的问题，则生成新问题
             const requestData = {
                 name: session.candidateName,
                 email: session.candidateEmail,
                 invitation_code: session.invitationCode || '1001'
             };
             
-            console.log('发送API请求:', requestData);
+            console.log('发送API请求生成新问题:', requestData);
             
             // 调用API生成问题
             const response = await fetch('http://localhost:8000/api/interview/generate-questions', {
