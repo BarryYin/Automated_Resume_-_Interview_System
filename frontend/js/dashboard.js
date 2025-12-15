@@ -1618,7 +1618,7 @@ ${reportData.report}
 报告说明：
 - 本报告基于真实招聘数据生成
 - 数据来源：Excel候选人数据和职位数据
-- AI分析模型：通义千问Code
+- AI分析模型：百度文心大模型
 - 报告生成时间：${reportData.generated_at}
 
 联系方式：

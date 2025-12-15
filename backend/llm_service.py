@@ -31,6 +31,26 @@ class ErnieLLMService:
             "Value": "价值观，也包括个人价值观及对企业文化的认同度"
         }
 
+    def chat(self, prompt):
+        """
+        通用聊天方法，用于简单的文本生成
+        """
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=self.temperature,
+                max_tokens=self.max_tokens
+            )
+            
+            return response.choices[0].message.content
+            
+        except Exception as e:
+            print(f"LLM调用失败: {e}")
+            return ""
+
     def extract_text_from_pdf(self, pdf_path):
         """从PDF简历中提取文本"""
         try:

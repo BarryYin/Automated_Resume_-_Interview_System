@@ -30,5 +30,5 @@ ai-recruitment-system/
 ## 技术栈
 - 后端: Python + FastAPI
 - 前端: HTML + CSS + JavaScript
-- AI模型: 通义千问 (Qwen)
+- AI模型: 百度文心大模型 (ERNIE)
 - 数据库: SQLite (可扩展为PostgreSQL)
