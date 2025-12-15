@@ -16,7 +16,7 @@ class AIChatService:
             api_key=config.get('llm.api_key'),
             base_url=config.get('llm.base_url')
         )
-        self.model = config.get('llm.model', 'qwen-plus')
+        self.model = config.get('llm.model', 'ernie-4.5-turbo-32k')
         self.temperature = config.get('llm.temperature', 0.7)
         self.max_tokens = config.get('llm.max_tokens', 2000)
         
@@ -359,7 +359,7 @@ class AIChatService:
 
         try:
             response = self.client.chat.completions.create(
-                model="qwen-coder-plus",  # 使用qwen-coder模型
+                model="ernie-4.5-turbo-32k",  # 使用文心大模型
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
@@ -485,7 +485,7 @@ class AIChatService:
 
         try:
             response = self.client.chat.completions.create(
-                model="qwen-coder-plus",
+                model="ernie-4.5-turbo-32k",
                 messages=[
                     {"role": "system", "content": "你是一个专业的HR数据分析师，专门基于真实数据生成准确的招聘分析报告。"},
                     {"role": "user", "content": report_prompt}

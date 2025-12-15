@@ -18,9 +18,9 @@ class Config:
         # 默认配置
         default_config = {
             "llm": {
-                "api_key": "sk-b20dbc29a6ab4ada8b4711d8b817f7cb",
-                "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-                "model": "qwen-plus",
+                "api_key": "bce-v3/ALTAK-IlAGWrpPIFAMJ3g8kbD4I/f17c0a909b891c89b0dce53d913448d86a87bad9",
+                "base_url": "https://qianfan.baidubce.com/v2",
+                "model": "ernie-4.5-turbo-32k",
                 "temperature": 0.7,
                 "max_tokens": 2000
             },

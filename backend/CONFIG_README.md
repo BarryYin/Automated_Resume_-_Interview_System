@@ -17,9 +17,9 @@ backend/config.json
 ```json
 {
     "llm": {
-        "api_key": "your-api-key-here",
-        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        "model": "qwen-plus",
+        "api_key": "your-baidu-api-key-here",
+        "base_url": "https://qianfan.baidubce.com/v2",
+        "model": "ernie-4.5-turbo-32k",
         "temperature": 0.7,
         "max_tokens": 2000
     },
@@ -43,9 +43,9 @@ backend/config.json
 
 ### LLM配置 (llm)
 
-- **api_key**: 通义千问API密钥
-- **base_url**: API基础URL
-- **model**: 使用的模型名称（qwen-plus, qwen-max等）
+- **api_key**: 百度文心大模型API密钥
+- **base_url**: API基础URL (https://qianfan.baidubce.com/v2)
+- **model**: 使用的模型名称（ernie-4.5-turbo-32k, ernie-4.5, ernie-3.5等）
 - **temperature**: 生成温度（0-1，越高越随机）
 - **max_tokens**: 最大生成token数
 
@@ -71,7 +71,7 @@ backend/config.json
 
 ```bash
 export LLM_API_KEY="your-api-key"
-export LLM_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
+export LLM_BASE_URL="https://qianfan.baidubce.com/v2"
 ```
 
 环境变量优先级高于配置文件。

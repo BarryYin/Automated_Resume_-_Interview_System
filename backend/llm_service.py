@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LLM服务 - 集成通义千问Max模型
+LLM服务 - 集成百度文心大模型
 """
 
 import openai
@@ -10,14 +10,14 @@ from pathlib import Path
 import re
 from config import config
 
-class QwenLLMService:
+class ErnieLLMService:
     def __init__(self):
         # 从配置文件加载API配置
         self.client = openai.OpenAI(
             api_key=config.get('llm.api_key'),
             base_url=config.get('llm.base_url')
         )
-        self.model = config.get('llm.model', 'qwen-plus')
+        self.model = config.get('llm.model', 'ernie-4.5-turbo-32k')
         self.temperature = config.get('llm.temperature', 0.7)
         self.max_tokens = config.get('llm.max_tokens', 2000)
         
@@ -400,4 +400,4 @@ class QwenLLMService:
             }
 
 # 创建全局LLM服务实例
-llm_service = QwenLLMService()
+llm_service = ErnieLLMService()
