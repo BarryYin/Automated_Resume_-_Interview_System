@@ -32,7 +32,7 @@ class CandidateDetail {
     async loadCandidateData() {
         try {
             // 优先从后端API加载最新的候选人信息
-            const apiResponse = await fetch('http://localhost:8000/api/candidates');
+            const apiResponse = await fetch(buildApiUrl('/api/candidates'));
             
             if (apiResponse.ok) {
                 const candidates = await apiResponse.json();
@@ -96,7 +96,7 @@ class CandidateDetail {
     async loadAIFeedback(regenerate = false) {
         console.log('开始加载AI反馈', regenerate ? '(重新生成)' : '(使用缓存)');
         try {
-            const url = `http://localhost:8000/api/candidates/${this.candidateId}/ai-feedback${regenerate ? '?regenerate=true' : ''}`;
+            const url = buildApiUrl(`/api/candidates/${this.candidateId}/ai-feedback${regenerate ? '?regenerate=true' : ''}`);
             console.log('请求URL:', url);
             
             const response = await fetch(url);
@@ -200,7 +200,7 @@ class CandidateDetail {
 
     async loadEvaluationFromAPI() {
         try {
-            const response = await fetch(`http://localhost:8000/api/candidates/${this.candidateId}/evaluation`);
+            const response = await fetch(buildApiUrl(`/api/candidates/${this.candidateId}/evaluation`));
             
             if (response.ok) {
                 const evaluation = await response.json();
@@ -227,7 +227,7 @@ class CandidateDetail {
     async loadInterviewRecords() {
         console.log('开始加载面试记录，候选人ID:', this.candidateId);
         try {
-            const url = `http://localhost:8000/api/candidates/${this.candidateId}/interview-records`;
+            const url = buildApiUrl(`/api/candidates/${this.candidateId}/interview-records`);
             console.log('请求URL:', url);
             
             const response = await fetch(url);
@@ -669,7 +669,7 @@ class CandidateDetail {
             console.log('保存评分数据:', this.evaluationData);
             
             // 模拟API调用
-            const response = await fetch(`http://localhost:8000/api/candidates/${this.candidateId}/evaluation`, {
+            const response = await fetch(buildApiUrl(`/api/candidates/${this.candidateId}/evaluation`), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

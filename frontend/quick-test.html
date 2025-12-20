@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>快速测试</title>
+</head>
+<body>
+    <h1>JavaScript加载测试</h1>
+    <div id="results"></div>
+    
+    <script src="js/config.js"></script>
+    <script>
+        const results = document.getElementById('results');
+        
+        try {
+            results.innerHTML += '<p>✅ config.js加载成功</p>';
+            
+            if (typeof API_CONFIG !== 'undefined') {
+                results.innerHTML += '<p>✅ API_CONFIG已定义</p>';
+            } else {
+                results.innerHTML += '<p>❌ API_CONFIG未定义</p>';
+            }
+            
+            if (typeof buildApiUrl === 'function') {
+                results.innerHTML += '<p>✅ buildApiUrl函数已定义</p>';
+                const testUrl = buildApiUrl('/api/test');
+                results.innerHTML += `<p>✅ buildApiUrl测试: ${testUrl}</p>`;
+            } else {
+                results.innerHTML += '<p>❌ buildApiUrl函数未定义</p>';
+            }
+            
+            if (typeof getApiBaseUrl === 'function') {
+                results.innerHTML += '<p>✅ getApiBaseUrl函数已定义</p>';
+                const baseUrl = getApiBaseUrl();
+                results.innerHTML += `<p>✅ getApiBaseUrl(): ${baseUrl}</p>`;
+            } else {
+                results.innerHTML += '<p>❌ getApiBaseUrl函数未定义</p>';
+            }
+            
+        } catch (error) {
+            results.innerHTML += `<p style="color:red">❌ 错误: ${error.message}</p>`;
+        }
+    </script>
+    
+    <script>
+        // 模拟dashboard.js的开头部分
+        try {
+            results.innerHTML += '<p>✅ 模拟dashboard.js加载开始</p>';
+            
+            // 这里应该不会有错误了
+            let currentTab = 'positions';
+            let cachedCandidates = null;
+            
+            results.innerHTML += '<p>✅ dashboard.js变量定义成功</p>';
+            
+            // 测试switchTab函数定义
+            function switchTab(tabName) {
+                console.log('switchTab called:', tabName);
+                results.innerHTML += `<p>✅ switchTab函数调用: ${tabName}</p>`;
+            }
+            
+            results.innerHTML += '<p>✅ switchTab函数定义成功</p>';
+            
+            // 测试调用
+            switchTab('candidates');
+            switchTab('analytics');
+            
+        } catch (error) {
+            results.innerHTML += `<p style="color:red">❌ dashboard.js模拟错误: ${error.message}</p>`;
+        }
+    </script>
+</body>
+</html>

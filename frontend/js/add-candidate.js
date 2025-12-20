@@ -96,7 +96,7 @@ async function uploadFile(file) {
         updateProgressMessage('正在解析简历内容...');
         
         // 调用后端API
-        const response = await fetch('http://localhost:8000/api/candidates/parse-resume', {
+        const response = await fetch(buildApiUrl('/api/candidates/parse-resume'), {
             method: 'POST',
             body: formData
         });
@@ -195,7 +195,7 @@ async function handleFormSubmit(event) {
         }
         
         // 调用后端API
-        const response = await fetch('http://localhost:8000/api/candidates', {
+        const response = await fetch(buildApiUrl('/api/candidates'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

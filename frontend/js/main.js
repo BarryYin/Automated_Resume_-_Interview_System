@@ -1,5 +1,5 @@
-// API基础URL
-const API_BASE = 'http://localhost:8000/api';
+// API基础URL - 现在从config.js获取
+// const API_BASE = 'http://localhost:8000/api';  // 已移动到config.js
 
 // 返回首页功能
 function goBack() {
@@ -26,7 +26,7 @@ document.getElementById('candidateForm').addEventListener('submit', async functi
         submitBtn.disabled = true;
         
         // 调用API开始面试
-        const response = await fetch(`${API_BASE}/interview/start`, {
+        const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.INTERVIEW.START), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -43,7 +43,7 @@ document.getElementById('candidateForm').addEventListener('submit', async functi
         // 查询候选人ID（通过姓名或邮箱）
         let candidateId = null;
         try {
-            const candidatesResponse = await fetch(`${API_BASE}/candidates`);
+            const candidatesResponse = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.CANDIDATES.LIST));
             if (candidatesResponse.ok) {
                 const candidates = await candidatesResponse.json();
                 const candidate = candidates.find(c => 

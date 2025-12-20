@@ -134,7 +134,7 @@ class InterviewSession {
             const candidateId = session.candidateId;
             if (candidateId) {
                 try {
-                    const questionsResponse = await fetch(`http://localhost:8000/api/candidates/${candidateId}/questions`);
+                    const questionsResponse = await fetch(buildApiUrl(`/api/candidates/${candidateId}/questions`));
                     if (questionsResponse.ok) {
                         const questionsData = await questionsResponse.json();
                         if (questionsData.has_questions && questionsData.questions.length > 0) {
@@ -149,7 +149,7 @@ class InterviewSession {
                             // 创建面试会话记录（用于保存回答）
                             // 即使使用预生成的问题，也需要创建会话来保存回答
                             try {
-                                const sessionResponse = await fetch('http://localhost:8000/api/interview/start', {
+                                const sessionResponse = await fetch(buildApiUrl('/api/interview/start'), {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
@@ -215,7 +215,7 @@ class InterviewSession {
             console.log('发送API请求生成新问题:', requestData);
             
             // 调用API生成问题
-            const response = await fetch('http://localhost:8000/api/interview/generate-questions', {
+            const response = await fetch(buildApiUrl('/api/interview/generate-questions'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -497,7 +497,7 @@ class InterviewSession {
             const session = JSON.parse(savedSession);
             const llmSessionId = session.llmSessionId || this.sessionId;
             
-            const response = await fetch(`http://localhost:8000/api/interview/${llmSessionId}/answer`, {
+            const response = await fetch(buildApiUrl(`/api/interview/${llmSessionId}/answer`), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -577,7 +577,7 @@ class InterviewSession {
         
         // 通知后端更新CSV总分
         try {
-            await fetch(`http://localhost:8000/api/candidates/${this.candidateName}/finalize-scores`, {
+            await fetch(buildApiUrl(`/api/candidates/${this.candidateName}/finalize-scores`), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

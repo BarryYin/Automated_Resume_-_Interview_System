@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard修复测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { margin: 5px; padding: 10px 15px; }
+    </style>
+</head>
+<body>
+    <h1>Dashboard修复测试</h1>
+    
+    <div id="test-results"></div>
+    
+    <div>
+        <button onclick="testSwitchTab('positions')">测试岗位管理</button>
+        <button onclick="testSwitchTab('candidates')">测试候选人</button>
+        <button onclick="testSwitchTab('analytics')">测试数据分析</button>
+    </div>
+    
+    <div>
+        <button onclick="testApiConfig()">测试API配置</button>
+        <button onclick="testBuildApiUrl()">测试buildApiUrl函数</button>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script>
+        const results = document.getElementById('test-results');
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            results.appendChild(div);
+        }
+        
+        function testSwitchTab(tabName) {
+            try {
+                addResult(`测试切换到标签: ${tabName}`, 'info');
+                
+                // 模拟switchTab函数的核心逻辑
+                if (typeof switchTab === 'function') {
+                    switchTab(tabName);
+                    addResult(`✅ switchTab函数调用成功`, 'success');
+                } else {
+                    addResult(`❌ switchTab函数未定义`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ switchTab测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function testApiConfig() {
+            try {
+                addResult('测试API配置...', 'info');
+                
+                if (typeof getApiBaseUrl === 'function') {
+                    const baseUrl = getApiBaseUrl();
+                    addResult(`✅ getApiBaseUrl(): ${baseUrl}`, 'success');
+                } else {
+                    addResult(`❌ getApiBaseUrl函数未定义`, 'error');
+                }
+                
+                if (typeof API_CONFIG !== 'undefined') {
+                    addResult(`✅ API_CONFIG已定义`, 'success');
+                } else {
+                    addResult(`❌ API_CONFIG未定义`, 'error');
+                }
+                
+            } catch (error) {
+                addResult(`❌ API配置测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function testBuildApiUrl() {
+            try {
+                addResult('测试buildApiUrl函数...', 'info');
+                
+                if (typeof buildApiUrl === 'function') {
+                    const testUrl = buildApiUrl('/api/test');
+                    addResult(`✅ buildApiUrl('/api/test'): ${testUrl}`, 'success');
+                    
+                    // 测试实际API调用
+                    fetch(buildApiUrl('/api/candidates'))
+                        .then(response => {
+                            addResult(`✅ API调用状态: ${response.status}`, 'success');
+                            return response.json();
+                        })
+                        .then(data => {
+                            addResult(`✅ API调用成功，返回数据类型: ${typeof data}`, 'success');
+                        })
+                        .catch(error => {
+                            addResult(`⚠️ API调用失败: ${error.message}`, 'error');
+                        });
+                } else {
+                    addResult(`❌ buildApiUrl函数未定义`, 'error');
+                }
+                
+            } catch (error) {
+                addResult(`❌ buildApiUrl测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 简化的switchTab函数用于测试
+        function switchTab(tabName) {
+            console.log('测试switchTab:', tabName);
+            addResult(`模拟切换到: ${tabName}`, 'info');
+        }
+        
+        // 页面加载时自动测试
+        document.addEventListener('DOMContentLoaded', function() {
+            addResult('页面加载完成，开始自动测试...', 'info');
+            
+            setTimeout(() => {
+                testApiConfig();
+                testBuildApiUrl();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

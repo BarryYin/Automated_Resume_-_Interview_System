@@ -3,25 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>测试Dashboard按钮控制</title>
+    <title>Dashboard测试</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .nav { display: flex; gap: 10px; margin-bottom: 20px; }
-        .nav button { padding: 10px 20px; cursor: pointer; }
-        .nav button.active { background: #007bff; color: white; }
-        .create-btn { background: #28a745; color: white; padding: 10px 20px; border: none; cursor: pointer; }
+        .nav-btn { margin: 10px; padding: 10px; }
+        .nav-btn.active { background: blue; color: white; }
         .tab-content { display: none; padding: 20px; border: 1px solid #ccc; }
         .tab-content.active { display: block; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>测试Dashboard</h1>
-        <button class="create-btn" id="createPositionBtn">+ 创建新职位</button>
-    </div>
+    <h1>Dashboard功能测试</h1>
     
-    <div class="nav">
+    <div>
         <button class="nav-btn active" data-tab="positions" onclick="switchTab('positions')">岗位管理</button>
         <button class="nav-btn" data-tab="candidates" onclick="switchTab('candidates')">候选人</button>
         <button class="nav-btn" data-tab="analytics" onclick="switchTab('analytics')">数据分析</button>
@@ -29,24 +22,32 @@
     
     <div id="positions-content" class="tab-content active">
         <h2>岗位管理内容</h2>
-        <p>这里应该显示"创建新职位"按钮</p>
+        <p>这里是岗位管理的内容</p>
     </div>
     
     <div id="candidates-content" class="tab-content">
         <h2>候选人内容</h2>
-        <p>这里不应该显示"创建新职位"按钮</p>
+        <p>这里是候选人的内容</p>
     </div>
     
     <div id="analytics-content" class="tab-content">
         <h2>数据分析内容</h2>
-        <p>这里不应该显示"创建新职位"按钮</p>
+        <p>这里是数据分析的内容</p>
     </div>
-
+    
+    <div id="debug-info">
+        <h3>调试信息</h3>
+        <div id="debug-output"></div>
+    </div>
+    
+    <script src="js/config.js"></script>
     <script>
         let currentTab = 'positions';
-
+        
         function switchTab(tabName) {
             console.log('切换到标签:', tabName);
+            document.getElementById('debug-output').innerHTML += `<p>切换到: ${tabName}</p>`;
+            
             currentTab = tabName;
             
             // 更新导航按钮状态
@@ -65,28 +66,19 @@
             const targetContent = document.getElementById(`${tabName}-content`);
             if (targetContent) {
                 targetContent.classList.add('active');
-            }
-            
-            // 控制"创建新职位"按钮的显示/隐藏
-            const createPositionBtn = document.getElementById('createPositionBtn');
-            if (createPositionBtn) {
-                if (tabName === 'positions') {
-                    createPositionBtn.style.display = 'inline-block';
-                    console.log('显示创建职位按钮');
-                } else {
-                    createPositionBtn.style.display = 'none';
-                    console.log('隐藏创建职位按钮');
-                }
+                document.getElementById('debug-output').innerHTML += `<p>显示内容: ${tabName}-content</p>`;
             } else {
-                console.log('未找到创建职位按钮元素');
+                document.getElementById('debug-output').innerHTML += `<p style="color:red;">未找到内容: ${tabName}-content</p>`;
             }
         }
-
-        // 页面加载完成后初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('测试页面加载完成');
-            switchTab('positions');
-        });
+        
+        // 测试API配置
+        try {
+            document.getElementById('debug-output').innerHTML += `<p>API Base URL: ${getApiBaseUrl()}</p>`;
+            document.getElementById('debug-output').innerHTML += `<p>buildApiUrl('/api/test'): ${buildApiUrl('/api/test')}</p>`;
+        } catch (error) {
+            document.getElementById('debug-output').innerHTML += `<p style="color:red;">配置错误: ${error.message}</p>`;
+        }
     </script>
 </body>
 </html>

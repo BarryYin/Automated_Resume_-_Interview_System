@@ -99,7 +99,7 @@ class PDFViewer {
             canvas.style.display = 'none';
 
             // 尝试从后端API加载
-            const apiUrl = `http://localhost:8000/api/resume/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}`;
+            const apiUrl = buildApiUrl(`/api/resume/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}`);
             
             console.log('加载PDF:', apiUrl);
             
@@ -215,7 +215,7 @@ class PDFViewer {
 
     // 下载PDF文件
     downloadPDF(folder, filename) {
-        const apiUrl = `http://localhost:8000/api/resume/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}`;
+        const apiUrl = buildApiUrl(`/api/resume/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}`);
         
         const link = document.createElement('a');
         link.href = apiUrl;

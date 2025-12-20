@@ -1,15 +1,3 @@
-// API配置
-const API_CONFIG = {
-    BASE_URL: 'http://localhost:8000',
-    ENDPOINTS: {
-        candidates: '/api/candidates',
-        jobs: '/api/jobs',
-        stats: '/api/dashboard/stats',
-        login: '/api/auth/login',
-        register: '/api/auth/register'
-    }
-};
-
 // 全局变量
 let currentTab = 'positions';
 let cachedCandidates = null; // 缓存候选人数据
@@ -193,16 +181,25 @@ function switchTab(tabName) {
         console.log('未找到添加候选人按钮元素');
     }
     
-    // 根据标签加载相应数据
+// 根据标签加载相应数据
     switch(tabName) {
         case 'positions':
-            loadPositionsData();
+            loadPositionsData().catch(error => {
+                console.error('加载岗位数据失败:', error);
+                // 继续执行，不阻塞UI
+            });
             break;
         case 'candidates':
-            loadCandidatesData();
+            loadCandidatesData().catch(error => {
+                console.error('加载候选人数据失败:', error);
+                // 继续执行，不阻塞UI
+            });
             break;
         case 'analytics':
-            loadAnalyticsData();
+            loadAnalyticsData().catch(error => {
+                console.error('加载分析数据失败:', error);
+                // 继续执行，不阻塞UI
+            });
             break;
     }
 }
@@ -211,7 +208,7 @@ function switchTab(tabName) {
 async function loadPositionsData() {
     console.log('加载岗位数据');
     try {
-        const response = await fetch('http://localhost:8000/api/jobs');
+        const response = await fetch(buildApiUrl('/api/jobs'));
         if (response.ok) {
             const jobs = await response.json();
             renderPositions(jobs);
@@ -281,7 +278,7 @@ function renderPositions(jobs) {
 async function loadCandidatesData() {
     console.log('加载候选人数据');
     try {
-        const response = await fetch('http://localhost:8000/api/candidates');
+        const response = await fetch(buildApiUrl('/api/candidates'));
         if (response.ok) {
             const candidates = await response.json();
             cachedCandidates = candidates; // 缓存候选人数据
@@ -405,21 +402,21 @@ async function loadAnalyticsData() {
     
     // 更新统计数据
     try {
-        const statsResponse = await fetch('http://localhost:8000/api/dashboard/stats');
+        const statsResponse = await fetch(buildApiUrl('/api/dashboard/stats'));
         if (statsResponse.ok) {
             const stats = await statsResponse.json();
             updateAnalyticsStats(stats);
         }
         
         // 加载最佳候选人数据
-        const topResponse = await fetch('http://localhost:8000/api/candidates/top');
+        const topResponse = await fetch(buildApiUrl('/api/candidates/top'));
         if (topResponse.ok) {
             const topCandidates = await topResponse.json();
             updateTopCandidates(topCandidates);
         }
         
         // 加载最新候选人数据
-        const recentResponse = await fetch('http://localhost:8000/api/candidates/recent');
+        const recentResponse = await fetch(buildApiUrl('/api/candidates/recent'));
         if (recentResponse.ok) {
             const recentCandidates = await recentResponse.json();
             updateRecentCandidates(recentCandidates);
@@ -575,7 +572,7 @@ function createNewPosition() {
         
         try {
             // 调用后端API创建职位
-            const response = await fetch('http://localhost:8000/api/jobs', {
+            const response = await fetch(buildApiUrl('/api/jobs'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -952,7 +949,7 @@ function viewResume(folder, filename) {
         pdfViewer.showPDFModal(folder, filename);
     } else {
         // 降级到简单的下载功能
-        downloadResume(`http://localhost:8000/api/resume/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}`, filename);
+        downloadResume(buildApiUrl(`/api/resume/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}`), filename);
     }
 }
 
@@ -1139,7 +1136,7 @@ async function sendInterviewInvite(email, form) {
         };
         
         // 调用邮件发送API
-        const response = await fetch('http://localhost:8000/api/email/send-invite', {
+        const response = await fetch(buildApiUrl('/api/email/send-invite'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1232,7 +1229,7 @@ async function askQuickQuestion(question) {
     
     try {
         // 调用AI聊天API
-        const response = await fetch('http://localhost:8000/api/ai-chat', {
+        const response = await fetch(buildApiUrl('/api/ai-chat'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1300,7 +1297,7 @@ async function sendAIMessage() {
     
     try {
         // 调用AI聊天API
-        const response = await fetch('http://localhost:8000/api/ai-chat', {
+        const response = await fetch(buildApiUrl('/api/ai-chat'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1402,21 +1399,21 @@ async function loadAnalyticsData() {
     
     // 更新统计数据
     try {
-        const statsResponse = await fetch('http://localhost:8000/api/dashboard/stats');
+        const statsResponse = await fetch(buildApiUrl('/api/dashboard/stats'));
         if (statsResponse.ok) {
             const stats = await statsResponse.json();
             updateAnalyticsStats(stats);
         }
         
         // 加载最佳候选人数据
-        const topResponse = await fetch('http://localhost:8000/api/candidates/top');
+        const topResponse = await fetch(buildApiUrl('/api/candidates/top'));
         if (topResponse.ok) {
             const topCandidates = await topResponse.json();
             updateTopCandidates(topCandidates);
         }
         
         // 加载最新候选人数据
-        const recentResponse = await fetch('http://localhost:8000/api/candidates/recent');
+        const recentResponse = await fetch(buildApiUrl('/api/candidates/recent'));
         if (recentResponse.ok) {
             const recentCandidates = await recentResponse.json();
             updateRecentCandidates(recentCandidates);
@@ -1566,7 +1563,7 @@ async function generateAndDownloadReport() {
         button.disabled = true;
         
         // 调用API生成报告
-        const response = await fetch('http://localhost:8000/api/generate-report', {
+        const response = await fetch(buildApiUrl('/api/generate-report'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1683,7 +1680,7 @@ async function sendEmailReport() {
         submitBtn.disabled = true;
         
         // 先生成完整报告
-        const reportResponse = await fetch('http://localhost:8000/api/generate-report', {
+        const reportResponse = await fetch(buildApiUrl('/api/generate-report'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1699,7 +1696,7 @@ async function sendEmailReport() {
         }
         
         // 调用新的邮件发送API
-        const response = await fetch('http://localhost:8000/api/email/send-report', {
+        const response = await fetch(buildApiUrl('/api/email/send-report'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1786,7 +1783,7 @@ async function viewResumeByName(candidateName) {
         // 如果没有缓存，从API获取
         if (!candidates) {
             console.log('缓存未命中，从API获取候选人数据');
-            const response = await fetch('http://localhost:8000/api/candidates');
+            const response = await fetch(buildApiUrl('/api/candidates'));
             if (!response.ok) {
                 throw new Error('获取候选人数据失败');
             }
@@ -1819,7 +1816,7 @@ async function updateCandidateStatus(candidateId, newStatus) {
         }
         
         // 调用API更新状态
-        const response = await fetch(`http://localhost:8000/api/candidates/${candidateId}/status`, {
+        const response = await fetch(buildApiUrl(`/api/candidates/${candidateId}/status`), {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -2138,7 +2135,7 @@ function showNotificationModal(candidateId, newStatus, candidateName) {
                 email_type: "status_notification"
             };
             
-            const response = await fetch('http://localhost:8000/api/email/send-notification', {
+            const response = await fetch(buildApiUrl('/api/email/send-notification'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2168,7 +2165,7 @@ function showNotificationModal(candidateId, newStatus, candidateName) {
 // 获取候选人列表（用于邮件发送）
 async function getCandidatesList() {
     try {
-        const response = await fetch('http://localhost:8000/api/candidates');
+        const response = await fetch(buildApiUrl('/api/candidates'));
         if (response.ok) {
             return await response.json();
         }
@@ -2393,7 +2390,7 @@ async function showQuestionsModal(candidateId, candidateName, candidateEmail, po
 // 加载候选人的面试问题
 async function loadCandidateQuestions(candidateId) {
     try {
-        const response = await fetch(`http://localhost:8000/api/candidates/${candidateId}/questions`);
+        const response = await fetch(buildApiUrl(`/api/candidates/${candidateId}/questions`));
         
         if (!response.ok) {
             throw new Error('加载问题失败');
@@ -2535,7 +2532,7 @@ async function regenerateQuestions(candidateId, candidateName, candidateEmail, p
         
         const positionCode = positionCodeMap[position] || '1001';
         
-        const response = await fetch(`http://localhost:8000/api/candidates/${candidateId}/generate-questions`, {
+        const response = await fetch(buildApiUrl(`/api/candidates/${candidateId}/generate-questions`), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2684,7 +2681,7 @@ async function submitFeedbackAndRegenerate(candidateId, candidateName, candidate
         
         const positionCode = positionCodeMap[position] || '1001';
         
-        const response = await fetch(`http://localhost:8000/api/candidates/${candidateId}/generate-questions`, {
+        const response = await fetch(buildApiUrl(`/api/candidates/${candidateId}/generate-questions`), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

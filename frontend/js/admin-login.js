@@ -36,7 +36,7 @@ async function handleAdminLogin(event) {
     try {
         showLoading('正在验证管理员身份...');
         
-        const response = await fetch('http://localhost:8000/api/auth/login', {
+        const response = await fetch(buildApiUrl('/api/auth/login'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ async function handleAdminRegister(event) {
     try {
         showLoading('正在创建管理员账号...');
         
-        const response = await fetch('http://localhost:8000/api/auth/register', {
+        const response = await fetch(buildApiUrl('/api/auth/register'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

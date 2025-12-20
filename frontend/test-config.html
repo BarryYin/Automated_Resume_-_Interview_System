@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配置测试</title>
+</head>
+<body>
+    <h1>API配置测试</h1>
+    <div id="results"></div>
+    
+    <script src="js/config.js"></script>
+    <script>
+        const results = document.getElementById('results');
+        
+        try {
+            results.innerHTML += `<p>getApiBaseUrl(): ${getApiBaseUrl()}</p>`;
+            results.innerHTML += `<p>API_CONFIG.BASE_URL: ${API_CONFIG.BASE_URL}</p>`;
+            results.innerHTML += `<p>buildApiUrl('/api/test'): ${buildApiUrl('/api/test')}</p>`;
+            results.innerHTML += `<p>API_BASE: ${window.API_BASE}</p>`;
+            
+            // 测试一个实际的API调用
+            fetch(buildApiUrl('/api/candidates'))
+                .then(response => {
+                    results.innerHTML += `<p>API调用状态: ${response.status}</p>`;
+                    return response.json();
+                })
+                .then(data => {
+                    results.innerHTML += `<p>API调用成功，返回数据: ${JSON.stringify(data).substring(0, 100)}...</p>`;
+                })
+                .catch(error => {
+                    results.innerHTML += `<p style="color: red;">API调用失败: ${error.message}</p>`;
+                });
+                
+        } catch (error) {
+            results.innerHTML += `<p style="color: red;">配置错误: ${error.message}</p>`;
+        }
+    </script>
+</body>
+</html>
