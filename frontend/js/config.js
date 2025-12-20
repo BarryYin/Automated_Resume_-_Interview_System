@@ -5,18 +5,18 @@
 function getApiBaseUrl() {
     // 如果是本地开发环境
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        return 'http://localhost:8000';
+        return 'http://localhost:8000';  // 改回8000端口
     }
     
     // 如果是生产环境，使用相对路径或者当前域名
     // 方案1: 使用相对路径（推荐）
-    return '';  // 空字符串表示使用相对路径，如 '/api/candidates'
+    // return '';  // 空字符串表示使用相对路径，如 '/api/candidates'
     
     // 方案2: 使用当前域名的8000端口
-    // return `${window.location.protocol}//${window.location.hostname}:8000`;
+    return `${window.location.protocol}//${window.location.hostname}:8000`;
     
     // 方案3: 使用完全自定义的域名
-    // return 'https://your-api-domain.com';
+    // return 'https://your-production-domain.com';  // 替换为你的生产环境域名
 }
 
 // API配置

@@ -2559,7 +2559,7 @@ async function regenerateQuestions(candidateId, candidateName, candidateEmail, p
         await loadCandidateQuestions(candidateId);
         
         // 刷新候选人列表
-        await loadCandidates();
+        await loadCandidatesData();
         
     } catch (error) {
         console.error('生成面试问题失败:', error);
@@ -2709,7 +2709,7 @@ async function submitFeedbackAndRegenerate(candidateId, candidateName, candidate
         await loadCandidateQuestions(candidateId);
         
         // 刷新候选人列表
-        await loadCandidates();
+        await loadCandidatesData();
         
     } catch (error) {
         console.error('生成面试问题失败:', error);
